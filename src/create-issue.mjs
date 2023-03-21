@@ -10,12 +10,22 @@ const octokit = new Octokit({
   auth,
 });
 
-repos.forEach(async (repo) => {
-  const result = await octokit.issues.create({
-    owner,
-    repo,
-    title,
-    body,
-  });
-  console.log(result.data.html_url);
-});
+const data = await Promise.all(
+  repos.map(async (repo) => {
+    const result = await octokit.issues.create({
+      owner,
+      repo,
+      title,
+      body,
+    });
+    return result.data.html_url;
+  })
+);
+
+console.log(
+  data
+    .map((url) => {
+      return `- [ ] ${url}`;
+    })
+    .join("\n")
+);
