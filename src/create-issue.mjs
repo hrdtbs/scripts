@@ -1,10 +1,10 @@
 import { Octokit } from "@octokit/rest";
 
-const auth = process.env.GH_AUTH;
-const owner = "hrdtbs";
-const repos = ["scripts"];
-const title = "auto create issue";
-const body = ["## Why", "", "## What", ""].join("\n");
+const auth = process.env.GH_TOKEN;
+const owner = "";
+const repos = [];
+const title = "";
+const body = [].join("\n");
 
 const octokit = new Octokit({
   auth,
