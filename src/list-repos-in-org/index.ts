@@ -38,7 +38,7 @@ if (!auth) {
 const repos = await getReposForOrg(octokit, flags.org);
 
 // Filter
-const activeRepos = filterActivate(repos);
+const filteredRepos = filterActivate(repos);
 
 // Generate file
 const outputDir = flags.output;
@@ -49,7 +49,7 @@ const jsonContent = JSON.stringify(
   {
     organization: flags.org,
     timestamp: new Date().toISOString(),
-    repositories: activeRepos.map((repo) => ({
+    repositories: filteredRepos.map((repo) => ({
       name: repo.name,
       fullName: repo.full_name,
       url: repo.html_url,
