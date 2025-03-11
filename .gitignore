@@ -3,3 +3,7 @@ node_modules/
 # Deno
 .env
 .DS_Store
+
+
+# Outputs
+.output/

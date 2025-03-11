@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start": "deno run --allow-env --allow-net"
+    "start": "deno run --allow-env --allow-net --allow-write --allow-read"
   },
   "compilerOptions": {
     "allowJs": true,
