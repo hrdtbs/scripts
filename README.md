@@ -18,12 +18,18 @@ export GH_TOKEN="your-github-token"
 
 ```bash
 # リポジトリ一覧の取得
-deno task start src/list-repos.ts
+deno task start src/list-repos.ts --org=組織名
 
 # Issue の作成
 deno task start src/create-issue.ts
 
 # または従来の方法でも実行可能
-deno run --config deno.json --allow-env --allow-net src/list-repos.ts
+deno run --config deno.json --allow-env --allow-net src/list-repos.ts --org=組織名
 deno run --config deno.json --allow-env --allow-net src/create-issue.ts
 ```
+
+## パラメータ
+
+### list-repos.ts
+
+- `--org`: （必須）GitHubの組織名を指定します
