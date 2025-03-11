@@ -123,6 +123,7 @@ const jsonContent = JSON.stringify(
       dependabotDisabled: disabledRepos.map((r) => ({
         name: r.repository,
         reason: r.error?.message,
+        settingsUrl: `https://github.com/${org}/${r.repository}/settings/security_analysis`,
       })),
       noAccess: noAccessRepos.map((r) => ({
         name: r.repository,
