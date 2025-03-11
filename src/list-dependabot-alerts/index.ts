@@ -82,6 +82,23 @@ const totalAlerts = successResults.reduce(
 );
 const reposWithAlerts = successResults.filter((repo) => repo.alerts.length > 0);
 
+// 重要度ごとの集計
+type Severity = "critical" | "high" | "medium" | "low" | "unknown";
+const severityCounts: Record<Severity, number> = {
+  critical: 0,
+  high: 0,
+  medium: 0,
+  low: 0,
+  unknown: 0,
+};
+
+successResults.forEach((repo) => {
+  repo.alerts.forEach((alert) => {
+    const severity = alert.security_advisory.severity.toLowerCase() as Severity;
+    severityCounts[severity] = (severityCounts[severity] || 0) + 1;
+  });
+});
+
 const jsonContent = JSON.stringify(
   {
     organization: org,
@@ -92,6 +109,12 @@ const jsonContent = JSON.stringify(
       accessibleRepositories: successResults.length,
       repositoriesWithAlerts: reposWithAlerts.length,
       totalAlerts,
+      alertsBySeverity: {
+        critical: severityCounts.critical,
+        high: severityCounts.high,
+        medium: severityCounts.medium,
+        low: severityCounts.low,
+      },
       inaccessibleRepositories: {
         total: errorResults.length,
         dependabotDisabled: disabledRepos.length,
@@ -104,6 +127,11 @@ const jsonContent = JSON.stringify(
       .map((repo) => ({
         name: repo.repository,
         alertCount: repo.alerts.length,
+        alertsBySeverity: repo.alerts.reduce((counts, alert) => {
+          const severity = alert.security_advisory.severity.toLowerCase();
+          counts[severity] = (counts[severity] || 0) + 1;
+          return counts;
+        }, {}),
         alerts: repo.alerts.map((alert) => ({
           number: alert.number,
           state: alert.state,
@@ -146,6 +174,10 @@ console.log(`\n📊 サマリー:
   - アクセス可能: ${successResults.length}
     - アラートあり: ${reposWithAlerts.length}
     - 総アラート数: ${totalAlerts}
+      - Critical: ${severityCounts.critical}
+      - High: ${severityCounts.high}
+      - Medium: ${severityCounts.medium}
+      - Low: ${severityCounts.low}
   - アクセス不可: ${errorResults.length}
     - Dependabot無効: ${disabledRepos.length}
     - アクセス権限なし: ${noAccessRepos.length}
