@@ -1,5 +1,5 @@
 import { filterActivate } from "./filters/filterActivate.ts";
-import { getReposForOrg } from "./getReposInOrg.ts";
+import { getReposForOrg } from "./get-repos-in-org.ts";
 import { Octokit } from "npm:@octokit/rest@19.0.4";
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 
@@ -24,4 +24,8 @@ const octokit = new Octokit({
 
 const repos = await getReposForOrg(octokit, flags.org);
 
-console.log(filterActivate(repos));
+console.log(
+  filterActivate(repos).map((repo) => {
+    return repo.name;
+  })
+);
