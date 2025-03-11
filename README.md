@@ -100,3 +100,87 @@ GitHubトークンには以下の権限が必要です：
 ```bash
 deno run --allow-env --allow-net src/create-issue/index.ts --repo=repo-name
 ```
+
+### list-renovate-status
+
+組織内のリポジトリのRenovateの有効化状況を確認するスクリプトです。各リポジトリのDependency Dashboardを解析し、依存関係の更新状況をグループごとに集計します。
+
+```bash
+deno task start src/list-renovate-status/index.ts --org=組織名 [--output=出力ディレクトリ]
+```
+
+#### オプション
+
+- `--org`: 必須。対象の組織名
+- `--output`: 任意。出力ディレクトリ（デフォルト: `.output`）
+
+#### 出力形式
+
+`${org}-renovate-status.json`ファイルに以下の形式で出力されます：
+
+```json
+{
+  "organization": "組織名",
+  "timestamp": "2024-03-11T12:34:56.789Z",
+  "summary": {
+    "totalRepositories": 10,
+    "enabledRepositories": 5,
+    "disabledRepositories": 5,
+    "totalManagedDependencies": 100
+  },
+  "repositories": {
+    "enabled": [
+      {
+        "name": "repo-name",
+        "dependencyCount": 20,
+        "dashboardUrl": "https://github.com/org/repo/issues/1",
+        "dependencyGroups": [
+          {
+            "title": "Rate-Limited",
+            "count": 10,
+            "dependencies": [
+              "@types/node",
+              "cloud.google.com/go/videointelligence",
+              // ...
+            ]
+          },
+          {
+            "title": "Open",
+            "count": 5,
+            "dependencies": [
+              "github.com/arran4/golang-ical",
+              // ...
+            ]
+          },
+          {
+            "title": "Ignored or Blocked",
+            "count": 5,
+            "dependencies": [
+              "github.com/matsuri-tech/date-go/v2",
+              // ...
+            ]
+          }
+        ]
+      }
+    ],
+    "disabled": [
+      {
+        "name": "repo-name"
+      }
+    ]
+  }
+}
+```
+
+コンソール出力では、以下のような形式でサマリーが表示されます：
+
+```
+📊 サマリー:
+- 検査したリポジトリ数: 10
+  - Renovate有効: 5
+    - 管理対象の依存関係数: 100
+    - Rate-Limited: 50
+    - Open: 30
+    - Ignored or Blocked: 20
+  - Renovate無効: 5
+```
