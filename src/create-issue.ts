@@ -1,8 +1,8 @@
-import { Octokit } from "@octokit/rest";
+import { Octokit } from "npm:@octokit/rest@19.0.4";
 
-const auth = process.env.GH_TOKEN;
+const auth = Deno.env.get("GH_TOKEN");
 const owner = "";
-const repos = [];
+const repos: string[] = [];
 const title = "";
 const body = [].join("\n");
 

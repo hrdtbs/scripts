@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "start": "deno run --allow-env --allow-net"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "strict": true,
+    "lib": ["deno.window", "deno.ns"]
+  },
+  "imports": {
+    "@octokit/rest": "npm:@octokit/rest@19.0.4"
+  }
+}

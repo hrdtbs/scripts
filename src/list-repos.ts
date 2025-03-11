@@ -1,6 +1,6 @@
-import { Octokit } from "@octokit/rest";
+import { Octokit } from "npm:@octokit/rest@19.0.4";
 
-const auth = process.env.GH_TOKEN;
+const auth = Deno.env.get("GH_TOKEN");
 
 const orgName = "";
 
@@ -8,7 +8,7 @@ const octokit = new Octokit({
   auth,
 });
 
-const getReposForOrg = async (octokit, orgName) => {
+const getReposForOrg = async (octokit: Octokit, orgName: string) => {
   const repos = [];
   let page = 1;
   while (true) {
