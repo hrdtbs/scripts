@@ -184,3 +184,74 @@ deno task start src/list-renovate-status/index.ts --org=組織名 [--output=出�
     - Ignored or Blocked: 20
   - Renovate無効: 5
 ```
+
+### search-actions-in-org
+
+組織内の全リポジトリのGitHub Actions使用状況を分析し、特定のアクションの直接的・間接的な使用状況をJSONファイルとして出力します。
+
+```bash
+deno task start src/search-actions-in-org/index.ts --org=org-name --action=action-name [--output=出力ディレクトリ]
+```
+
+#### オプション
+
+- `--org`: （必須）GitHubの組織名
+- `--action`: （必須）検索対象のGitHub Action（例: `actions/checkout`）
+- `--output`: （オプション）出力ディレクトリのパス（デフォルト: `.output`）
+
+#### 必要な権限
+
+GitHubトークンには以下の権限が必要です：
+- `repo`: リポジトリへのアクセス権限
+
+#### 出力
+
+指定したディレクトリに `{組織名}-action-usage.json` というファイルが生成されます。
+ファイルには以下の情報が含まれます：
+
+```json
+{
+  "organization": "組織名",
+  "timestamp": "生成日時",
+  "targetAction": "検索対象のアクション",
+  "summary": {
+    "totalRepositories": "スキャンしたリポジトリの総数",
+    "repositoriesScanned": "スキャンに成功したリポジトリ数",
+    "repositoriesWithDirectUsage": "直接使用しているリポジトリ数",
+    "repositoriesWithIndirectUsage": "間接的に使用しているリポジトリ数",
+    "totalDirectUsages": "直接使用の総数",
+    "totalIndirectUsages": "間接的な使用の総数"
+  },
+  "directUsages": [
+    {
+      "repo": "リポジトリ名",
+      "workflow": "ワークフローファイルのパス"
+    }
+  ],
+  "indirectUsages": {
+    "アクション名": [
+      {
+        "repo": "リポジトリ名",
+        "workflow": "ワークフローファイルのパス"
+      }
+    ]
+  },
+  "errors": {
+    "accessErrors": ["アクセスエラーが発生したリポジトリ"],
+    "scanErrors": ["スキャンエラーが発生したリポジトリ"]
+  }
+}
+```
+
+コンソール出力では、以下のような形式でサマリーが表示されます：
+
+```
+📊 サマリー:
+- 直接使用:
+  - リポジトリ数: 10
+  - 使用回数: 15
+- 間接的な使用:
+  - リポジトリ数: 5
+  - 使用回数: 8
+  - 使用アクション数: 3
+```
