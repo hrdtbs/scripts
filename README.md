@@ -42,7 +42,7 @@ deno task start src/list-repos-in-org/index.ts --org=org-name [--output=出力�
 組織内の全リポジトリのDependabotアラートを取得し、JSONファイルとして出力します。
 
 ```bash
-deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出力ディレクトリ] [--state=アラートの状態]
+deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出力ディレクトリ] [--state=アラートの状態] [--format=出力形式]
 ```
 
 #### オプション
@@ -54,6 +54,9 @@ deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出
   - `closed`: 解決済みのアラート
   - `dismissed`: 却下されたアラート
   - `fixed`: 修正済みのアラート
+- `--format`: （オプション）出力形式（デフォルト: `json`）
+  - `json`: JSON形式で出力
+  - `csv`: CSV形式で出力
 
 #### 必要な権限
 
@@ -65,35 +68,42 @@ GitHubトークンには以下の権限が必要です：
 
 指定したディレクトリに以下の2つのファイルが生成されます：
 
-1. `{組織名}-dependabot-alerts.json`: アラート情報
-```json
-[
-  {
-    "organization": "組織名",
-    "timestamp": "生成日時",
-    "state": "アラートの状態",
-    "repository": "リポジトリ名",
-    "number": "アラート番号",
-    "alert_id": "アラートID",
-    "dependency": {
-      "package": {
-        "ecosystem": "パッケージエコシステム",
-        "name": "パッケージ名"
-      },
-      "manifest_path": "マニフェストファイルのパス",
-      "scope": "依存関係のスコープ",
-      "relationship": "依存関係の種類"
-    },
-    "severity": "深刻度（critical/high/medium/low）",
-    "summary": "概要",
-    "description": "詳細な説明",
-    "vulnerableVersionRange": "脆弱性のあるバージョン範囲",
-    "firstPatchedVersion": "最初の修正バージョン",
-    "createdAt": "作成日時",
-    "updatedAt": "更新日時"
-  }
-]
-```
+1. `{組織名}-dependabot-alerts.{json|csv}`: アラート情報
+   - `--format=json`の場合（デフォルト）:
+   ```json
+   [
+     {
+       "organization": "組織名",
+       "timestamp": "生成日時",
+       "state": "アラートの状態",
+       "repository": "リポジトリ名",
+       "number": "アラート番号",
+       "alert_id": "アラートID",
+       "dependency": {
+         "package": {
+           "ecosystem": "パッケージエコシステム",
+           "name": "パッケージ名"
+         },
+         "manifest_path": "マニフェストファイルのパス",
+         "scope": "依存関係のスコープ",
+         "relationship": "依存関係の種類"
+       },
+       "severity": "深刻度（critical/high/medium/low）",
+       "summary": "概要",
+       "description": "詳細な説明",
+       "vulnerableVersionRange": "脆弱性のあるバージョン範囲",
+       "firstPatchedVersion": "最初の修正バージョン",
+       "createdAt": "作成日時",
+       "updatedAt": "更新日時"
+     }
+   ]
+   ```
+
+   - `--format=csv`の場合:
+   ```csv
+   organization,timestamp,state,repository,number,alert_id,package_ecosystem,package_name,manifest_path,scope,relationship,severity,summary,vulnerable_version_range,first_patched_version,created_at,updated_at
+   組織名,生成日時,アラートの状態,リポジトリ名,アラート番号,アラートID,パッケージエコシステム,パッケージ名,マニフェストファイルのパス,依存関係のスコープ,依存関係の種類,深刻度,概要,脆弱性のあるバージョン範囲,最初の修正バージョン,作成日時,更新日時
+   ```
 
 2. `{組織名}-dependabot-errors.json`: エラー情報
 ```json
