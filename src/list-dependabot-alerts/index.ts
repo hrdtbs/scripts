@@ -67,7 +67,8 @@ const results = await Promise.all(
 const outputDir = flags.output;
 await ensureDir(outputDir);
 
-const outputPath = join(outputDir, `${org}-dependabot-alerts.json`);
+const alertsOutputPath = join(outputDir, `${org}-dependabot-alerts.json`);
+const errorsOutputPath = join(outputDir, `${org}-dependabot-errors.json`);
 
 // 結果を分類
 const successResults = results.filter((r) => r.status === "success");
@@ -99,66 +100,56 @@ successResults.forEach((repo) => {
   });
 });
 
-const jsonContent = JSON.stringify(
+// アラート情報の出力
+const alertsContent = JSON.stringify(
+  successResults
+    .filter((repo) => repo.alerts.length > 0)
+    .flatMap((repo) =>
+      repo.alerts.map((alert) => ({
+        organization: org,
+        timestamp: new Date().toISOString(),
+        state: alert.state,
+        repository: repo.repository,
+        number: alert.number,
+        alert_id: alert.number,
+        dependency: alert.dependency,
+        severity: alert.security_advisory.severity.toLowerCase(),
+        summary: alert.security_advisory.summary,
+        description: alert.security_advisory.description,
+        vulnerableVersionRange:
+          alert.security_vulnerability.vulnerable_version_range,
+        firstPatchedVersion: alert.security_vulnerability.first_patched_version,
+        createdAt: alert.created_at,
+        updatedAt: alert.updated_at,
+      }))
+    ),
+  null,
+  2
+);
+
+// エラー情報の出力
+const errorsContent = JSON.stringify(
   {
     organization: org,
     timestamp: new Date().toISOString(),
-    state: flags.state,
     summary: {
-      totalRepositories: repos.length,
-      accessibleRepositories: successResults.length,
-      repositoriesWithAlerts: reposWithAlerts.length,
-      totalAlerts,
-      alertsBySeverity: {
-        critical: severityCounts.critical,
-        high: severityCounts.high,
-        medium: severityCounts.medium,
-        low: severityCounts.low,
-      },
-      inaccessibleRepositories: {
-        total: errorResults.length,
-        dependabotDisabled: disabledRepos.length,
-        noAccess: noAccessRepos.length,
-        otherErrors: otherErrorRepos.length,
-      },
+      totalErrors: errorResults.length,
+      dependabotDisabled: disabledRepos.length,
+      noAccess: noAccessRepos.length,
+      otherErrors: otherErrorRepos.length,
     },
-    accessibleRepositories: successResults
-      .filter((repo) => repo.alerts.length > 0)
-      .map((repo) => ({
-        name: repo.repository,
-        alertCount: repo.alerts.length,
-        alertsBySeverity: repo.alerts.reduce((counts, alert) => {
-          const severity = alert.security_advisory.severity.toLowerCase();
-          counts[severity] = (counts[severity] || 0) + 1;
-          return counts;
-        }, {}),
-        alerts: repo.alerts.map((alert) => ({
-          number: alert.number,
-          state: alert.state,
-          dependency: alert.dependency,
-          severity: alert.security_advisory.severity,
-          summary: alert.security_advisory.summary,
-          description: alert.security_advisory.description,
-          vulnerableVersionRange:
-            alert.security_vulnerability.vulnerable_version_range,
-          firstPatchedVersion:
-            alert.security_vulnerability.first_patched_version,
-          createdAt: alert.created_at,
-          updatedAt: alert.updated_at,
-        })),
-      })),
-    inaccessibleRepositories: {
+    errors: {
       dependabotDisabled: disabledRepos.map((r) => ({
-        name: r.repository,
+        repository: r.repository,
         reason: r.error?.message,
         settingsUrl: `https://github.com/${org}/${r.repository}/settings/security_analysis`,
       })),
       noAccess: noAccessRepos.map((r) => ({
-        name: r.repository,
+        repository: r.repository,
         reason: r.error?.message,
       })),
       otherErrors: otherErrorRepos.map((r) => ({
-        name: r.repository,
+        repository: r.repository,
         reason: r.error?.message,
       })),
     },
@@ -167,8 +158,11 @@ const jsonContent = JSON.stringify(
   2
 );
 
-await Deno.writeTextFile(outputPath, jsonContent);
-console.log(`\n📝 Dependabotアラート一覧を ${outputPath} に出力しました`);
+await Deno.writeTextFile(alertsOutputPath, alertsContent);
+await Deno.writeTextFile(errorsOutputPath, errorsContent);
+
+console.log(`\n📝 Dependabotアラート一覧を ${alertsOutputPath} に出力しました`);
+console.log(`📝 エラー情報を ${errorsOutputPath} に出力しました`);
 console.log(`\n📊 サマリー:
 - 検査したリポジトリ数: ${repos.length}
   - アクセス可能: ${successResults.length}

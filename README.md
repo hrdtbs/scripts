@@ -63,36 +63,88 @@ GitHubトークンには以下の権限が必要です：
 
 #### 出力
 
-指定したディレクトリに `{組織名}-dependabot-alerts.json` というファイルが生成されます。
-ファイルには以下の情報が含まれます：
+指定したディレクトリに以下の2つのファイルが生成されます：
 
+1. `{組織名}-dependabot-alerts.json`: アラート情報
+```json
+[
+  {
+    "organization": "組織名",
+    "timestamp": "生成日時",
+    "state": "アラートの状態",
+    "repository": "リポジトリ名",
+    "number": "アラート番号",
+    "alert_id": "アラートID",
+    "dependency": {
+      "package": {
+        "ecosystem": "パッケージエコシステム",
+        "name": "パッケージ名"
+      },
+      "manifest_path": "マニフェストファイルのパス",
+      "scope": "依存関係のスコープ",
+      "relationship": "依存関係の種類"
+    },
+    "severity": "深刻度（critical/high/medium/low）",
+    "summary": "概要",
+    "description": "詳細な説明",
+    "vulnerableVersionRange": "脆弱性のあるバージョン範囲",
+    "firstPatchedVersion": "最初の修正バージョン",
+    "createdAt": "作成日時",
+    "updatedAt": "更新日時"
+  }
+]
+```
+
+2. `{組織名}-dependabot-errors.json`: エラー情報
 ```json
 {
   "organization": "組織名",
   "timestamp": "生成日時",
-  "state": "アラートの状態",
-  "totalAlerts": "総アラート数",
-  "repositories": [
-    {
-      "name": "リポジトリ名",
-      "alertCount": "アラート数",
-      "alerts": [
-        {
-          "number": "アラート番号",
-          "state": "アラートの状態",
-          "dependency": "依存パッケージ名",
-          "severity": "深刻度",
-          "summary": "概要",
-          "description": "詳細な説明",
-          "vulnerableVersionRange": "脆弱性のあるバージョン範囲",
-          "firstPatchedVersion": "最初の修正バージョン",
-          "createdAt": "作成日時",
-          "updatedAt": "更新日時"
-        }
-      ]
-    }
-  ]
+  "summary": {
+    "totalErrors": "エラーの総数",
+    "dependabotDisabled": "Dependabotが無効なリポジトリ数",
+    "noAccess": "アクセス権限がないリポジトリ数",
+    "otherErrors": "その他のエラー数"
+  },
+  "errors": {
+    "dependabotDisabled": [
+      {
+        "repository": "リポジトリ名",
+        "reason": "エラーの理由",
+        "settingsUrl": "設定ページのURL"
+      }
+    ],
+    "noAccess": [
+      {
+        "repository": "リポジトリ名",
+        "reason": "エラーの理由"
+      }
+    ],
+    "otherErrors": [
+      {
+        "repository": "リポジトリ名",
+        "reason": "エラーの理由"
+      }
+    ]
+  }
 }
+```
+
+また、実行結果のサマリーがコンソールに出力されます：
+```
+📊 サマリー:
+- 検査したリポジトリ数: 総数
+  - アクセス可能: 成功数
+    - アラートあり: アラートがあるリポジトリ数
+    - 総アラート数: アラートの総数
+      - Critical: 重大度のアラート数
+      - High: 高重要度のアラート数
+      - Medium: 中重要度のアラート数
+      - Low: 低重要度のアラート数
+  - アクセス不可: エラー数
+    - Dependabot無効: Dependabotが無効なリポジトリ数
+    - アクセス権限なし: アクセス権限がないリポジトリ数
+    - その他のエラー: その他のエラー数
 ```
 
 ### create-issue
