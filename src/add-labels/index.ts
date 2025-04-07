@@ -65,16 +65,31 @@ const octokit = new Octokit({
 
 // リポジトリ一覧の取得
 async function getRepositories(): Promise<Repository[]> {
-  const { data } = await octokit.repos.listForOrg({
-    org,
-    type: "all",
-    per_page: 100,
-  });
+  const repos: Repository[] = [];
+  let page = 1;
 
-  return data.map((repo: GitHubRepoResponse) => ({
-    name: repo.name,
-    archived: repo.archived || false,
-  }));
+  while (true) {
+    const { data } = await octokit.repos.listForOrg({
+      org,
+      type: "all",
+      per_page: 100,
+      page,
+    });
+
+    repos.push(
+      ...data.map((repo: GitHubRepoResponse) => ({
+        name: repo.name,
+        archived: repo.archived || false,
+      }))
+    );
+
+    if (data.length < 100) {
+      break;
+    }
+    page++;
+  }
+
+  return repos;
 }
 
 // ラベルの追加
