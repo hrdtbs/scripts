@@ -323,12 +323,11 @@ GitHubトークンには以下の権限が必要です：
 組織内の全リポジトリに指定されたラベルを追加します。アーカイブされたリポジトリはスキップされます。
 
 ```bash
-deno task start src/add-labels/index.ts --token=GITHUB_TOKEN --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]
+deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]
 ```
 
 #### オプション
 
-- `--token`: （必須）GitHubのアクセストークン
 - `--org`: （必須）GitHubの組織名
 - `--labels`: （必須）追加するラベルの名前（カンマ区切り）
 - `--colors`: （オプション）ラベルの色（カンマ区切り、6桁の16進数）
@@ -338,14 +337,22 @@ deno task start src/add-labels/index.ts --token=GITHUB_TOKEN --org=ORGANIZATION 
 GitHubトークンには以下の権限が必要です：
 - `repo`: リポジトリへのフルアクセス
 
+#### 環境変数
+
+`.env`ファイルに以下の環境変数を設定してください：
+
+```bash
+GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
 #### 例
 
 ```bash
 # ラベルを追加（デフォルトの黒色を使用）
-deno task start src/add-labels/index.ts --token=ghp_xxx --org=matsuri-tech --labels=bug,enhancement
+deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement
 
 # ラベルと色を指定して追加
-deno task start src/add-labels/index.ts --token=ghp_xxx --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00
+deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00
 ```
 
 #### 注意事項

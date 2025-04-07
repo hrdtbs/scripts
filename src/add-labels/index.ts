@@ -1,5 +1,6 @@
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { Octokit } from "https://esm.sh/@octokit/rest@20.0.2";
+import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
 
 // 型定義
 interface Repository {
@@ -26,24 +27,28 @@ interface Label {
   color: string;
 }
 
+// .envファイルの読み込み
+const env = await load();
+const token = env.GH_TOKEN;
+
 // コマンドライン引数の解析
 const flags = parseArgs(Deno.args, {
-  string: ["token", "org", "labels", "colors"],
+  string: ["org", "labels", "colors"],
   default: {
     labels: "",
     colors: "",
   },
 });
 
-const token = flags.token;
 const org: string = flags.org || "";
 const labelNames = flags.labels.split(",").map((label) => label.trim());
 const labelColors = flags.colors.split(",").map((color) => color.trim());
 
 if (!token || !org || labelNames.length === 0) {
   console.error(
-    "使用方法: deno task start src/add-labels/index.ts --token=GITHUB_TOKEN --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
+    "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
   );
+  console.error("\n注意: .envファイルにGH_TOKENを設定してください");
   Deno.exit(1);
 }
 
