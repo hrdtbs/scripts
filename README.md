@@ -360,3 +360,63 @@ deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancem
 - 既に存在するラベルはスキップされます
 - 色が指定されていないラベルにはデフォルトの黒色（`000000`）が使用されます
 - 色の数がラベルの数より少ない場合は、残りのラベルにはデフォルトの黒色が使用されます
+
+### list-open-prs
+
+組織内のオープンなプルリクエスト一覧を取得し、JSONまたはCSVファイルとして出力します。
+アーカイブされたリポジトリ、ドラフトPRは除外され、作成日時の古い順にソートされます。
+
+```bash
+deno task start src/list-open-prs/index.ts --org=org-name [--output=出力ディレクトリ] [--format=出力形式]
+```
+
+#### オプション
+
+- `--org`: （必須）GitHubの組織名
+- `--output`: （オプション）出力ディレクトリのパス（デフォルト: `.output`）
+- `--format`: （オプション）出力形式（デフォルト: `json`）
+  - `json`: JSON形式で出力
+  - `csv`: CSV形式で出力
+
+#### 必要な権限
+
+GitHubトークンには以下の権限が必要です：
+- `repo`: リポジトリへのアクセス権限
+
+#### 出力
+
+指定したディレクトリに `{組織名}-open-prs.{json|csv}` というファイルが生成されます。
+
+- JSON形式の場合:
+```json
+{
+  "organization": "組織名",
+  "timestamp": "生成日時",
+  "pullRequests": [
+    {
+      "repository": "リポジトリ名",
+      "number": "PR番号",
+      "title": "PRのタイトル",
+      "url": "PRのURL",
+      "createdAt": "作成日時",
+      "updatedAt": "更新日時",
+      "author": "作成者のユーザー名"
+    }
+  ]
+}
+```
+
+- CSV形式の場合:
+```csv
+repository,number,title,url,createdAt,updatedAt,author
+リポジトリ名,PR番号,"PRのタイトル",PRのURL,作成日時,更新日時,作成者のユーザー名
+```
+
+また、実行結果のサマリーがコンソールに出力されます：
+```
+📊 サマリー:
+- 組織: 組織名
+- オープンPR数: PR数
+- 出力形式: json/csv
+- 出力ファイル: ファイルパス
+```
