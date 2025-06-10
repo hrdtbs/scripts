@@ -1,6 +1,23 @@
 # scripts
 
-### list-repos-in-org
+GitHub組織の管理や分析を行うDenoスクリプト集です。
+
+## 📚 目次
+
+- [list-repos-in-org](#list-repos-in-org) - 組織のリポジトリ一覧取得
+- [list-dependabot-alerts](#list-dependabot-alerts) - Dependabotアラート収集・分析
+- [create-issue](#create-issue) - Issue作成
+- [list-renovate-status](#list-renovate-status) - Renovate稼働状況確認
+- [search-actions-in-org](#search-actions-in-org) - GitHub Actions使用状況分析
+- [add-labels](#add-labels) - ラベル一括追加
+- [list-open-prs](#list-open-prs) - オープンPR一覧取得
+- [search-files-in-org](#search-files-in-org) - 組織内ファイル文字列検索
+- [🚀 セットアップ](#-セットアップ) - 環境構築・実行方法
+- [📁 プロジェクト構造](#-プロジェクト構造) - ディレクトリ構成
+
+---
+
+## list-repos-in-org
 
 組織のリポジトリ一覧を取得し、JSONファイルとして出力します。
 
@@ -37,7 +54,7 @@ deno task start src/list-repos-in-org/index.ts --org=org-name [--output=出力�
 }
 ```
 
-### list-dependabot-alerts
+## list-dependabot-alerts
 
 組織内の全リポジトリのDependabotアラートを取得し、JSONファイルとして出力します。
 
@@ -157,13 +174,13 @@ GitHubトークンには以下の権限が必要です：
     - その他のエラー: その他のエラー数
 ```
 
-### create-issue
+## create-issue
 
 ```bash
 deno run --allow-env --allow-net src/create-issue/index.ts --repo=repo-name
 ```
 
-### list-renovate-status
+## list-renovate-status
 
 組織内のリポジトリのRenovateの有効化状況を確認するスクリプトです。各リポジトリのDependency Dashboardを解析し、依存関係の更新状況をグループごとに集計します。
 
@@ -247,7 +264,7 @@ deno task start src/list-renovate-status/index.ts --org=組織名 [--output=出�
   - Renovate無効: 5
 ```
 
-### search-actions-in-org
+## search-actions-in-org
 
 組織内の全リポジトリのGitHub Actions使用状況を分析し、特定のアクションの直接的・間接的な使用状況をJSONファイルとして出力します。
 
@@ -318,7 +335,7 @@ GitHubトークンには以下の権限が必要です：
   - 使用アクション数: 3
 ```
 
-### add-labels
+## add-labels
 
 組織内の全リポジトリに指定されたラベルを追加します。アーカイブされたリポジトリはスキップされます。
 
@@ -361,7 +378,7 @@ deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancem
 - 色が指定されていないラベルにはデフォルトの黒色（`000000`）が使用されます
 - 色の数がラベルの数より少ない場合は、残りのラベルにはデフォルトの黒色が使用されます
 
-### list-open-prs
+## list-open-prs
 
 組織内のオープンなプルリクエスト一覧を取得し、JSONまたはCSVファイルとして出力します。
 アーカイブされたリポジトリ、ドラフトPRは除外され、作成日時の古い順にソートされます。
@@ -421,7 +438,7 @@ repository,number,title,url,createdAt,updatedAt,author
 - 出力ファイル: ファイルパス
 ```
 
-### search-files-in-org
+## search-files-in-org
 
 組織内の全リポジトリで特定の拡張子のファイルから指定された文字列を検索し、JSONまたはCSVファイルとして出力します。
 アーカイブされたリポジトリは除外されます。GitHub Search APIを使用した一括検索により、rate limitを効率的に回避します。
@@ -556,3 +573,69 @@ repository,file,path,url,lineNumber,matchedLine,contextBefore,contextAfter
 ⚠️  注意: 一部の拡張子でGitHub Search APIの1000件制限に達しました
    より多くの結果を取得するには、検索クエリをより具体的にしてください
 ```
+
+---
+
+## 🚀 セットアップ
+
+### 前提条件
+
+- [Deno](https://deno.land/) v1.40.0 以上
+- GitHub Personal Access Token
+
+### 環境変数の設定
+
+プロジェクトルートに `.env` ファイルを作成し、GitHub Personal Access Tokenを設定してください：
+
+```bash
+GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### GitHub Personal Access Tokenの作成
+
+1. GitHub の [Personal Access Tokens](https://github.com/settings/tokens) ページにアクセス
+2. "Generate new token" → "Generate new token (classic)" をクリック
+3. 必要な権限を選択：
+   - `repo`: リポジトリへのフルアクセス（全スクリプト共通）
+   - `security_events`: セキュリティイベントの読み取り（Dependabotアラート用）
+4. トークンを生成し、`.env` ファイルに設定
+
+### 実行方法
+
+各スクリプトは以下の形式で実行できます：
+
+```bash
+deno task start src/{スクリプト名}/index.ts [オプション...]
+```
+
+例：
+```bash
+# リポジトリ一覧を取得
+deno task start src/list-repos-in-org/index.ts --org=your-org
+
+# オープンPRを検索
+deno task start src/list-open-prs/index.ts --org=your-org --format=csv
+
+# ファイル内文字列を検索
+deno task start src/search-files-in-org/index.ts --org=your-org --query="useEffect"
+```
+
+## 📁 プロジェクト構造
+
+```
+scripts/
+├── src/                           # メインのソースコード
+│   ├── list-repos-in-org/         # リポジトリ一覧取得
+│   ├── list-dependabot-alerts/    # Dependabotアラート分析
+│   ├── create-issue.ts            # Issue作成
+│   ├── list-renovate-status/      # Renovate状況確認
+│   ├── search-actions-in-org/     # GitHub Actions分析
+│   ├── add-labels/                # ラベル管理
+│   ├── list-open-prs/             # PR管理
+│   └── search-files-in-org/       # ファイル検索
+├── .output/                       # 出力ファイル格納ディレクトリ
+├── deno.json                      # Deno設定ファイル
+├── deno.lock                      # 依存関係のロックファイル
+└── README.md                      # プロジェクトドキュメント
+```
+
