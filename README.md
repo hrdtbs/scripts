@@ -7,6 +7,7 @@ GitHub組織の管理や分析を行うDenoスクリプト集です。
 - [list-repos-in-org](#list-repos-in-org) - 組織のリポジトリ一覧取得
 - [list-dependabot-alerts](#list-dependabot-alerts) - Dependabotアラート収集・分析
 - [create-issue](#create-issue) - Issue作成
+- [create-issues-bulk](#create-issues-bulk) - 複数リポジトリへのIssue一括作成
 - [list-renovate-status](#list-renovate-status) - Renovate稼働状況確認
 - [search-actions-in-org](#search-actions-in-org) - GitHub Actions使用状況分析
 - [add-labels](#add-labels) - ラベル一括追加
@@ -177,7 +178,144 @@ GitHubトークンには以下の権限が必要です：
 ## create-issue
 
 ```bash
-deno run --allow-env --allow-net src/create-issue/index.ts --repo=repo-name
+deno run --allow-env --allow-net src/create-issue.ts --repo=repo-name
+```
+
+## create-issues-bulk
+
+指定された複数のリポジトリに同じタイトル、ボディ、関連Issueを持つIssueを一括作成します。
+
+```bash
+deno task start src/create-issues-bulk/index.ts --org=org-name --repos=repo1,repo2,repo3 --title="Issue Title" --body="Issue Body" [--parent-issue=親Issue] [--labels=label1,label2] [--assignees=user1,user2] [--output=出力ディレクトリ] [--format=出力形式]
+```
+
+#### オプション
+
+- `--org`: （必須）GitHubの組織名
+- `--repos`: （必須）対象リポジトリ名（カンマ区切り）
+- `--title`: （必須）作成するIssueのタイトル
+- `--body`: （必須）作成するIssueの本文
+- `--parent-issue`: （オプション）関連する親Issue（URLまたは`org/repo#123`形式）
+- `--labels`: （オプション）追加するラベル（カンマ区切り）
+- `--assignees`: （オプション）アサインするユーザー（カンマ区切り）
+- `--output`: （オプション）出力ディレクトリのパス（デフォルト: `.output`）
+- `--format`: （オプション）出力形式（デフォルト: `json`）
+  - `json`: JSON形式で出力
+  - `csv`: CSV形式で出力
+
+#### 必要な権限
+
+GitHubトークンには以下の権限が必要です：
+- `repo`: リポジトリへのフルアクセス
+
+#### 使用例
+
+```bash
+# 基本的な使用例
+deno task start src/create-issues-bulk/index.ts \
+  --org=matsuri-tech \
+  --repos=repo1,repo2,repo3 \
+  --title="セキュリティアップデート対応" \
+  --body="依存関係のセキュリティアップデートを実施してください。"
+
+# 関連Issueとラベルを指定
+deno task start src/create-issues-bulk/index.ts \
+  --org=matsuri-tech \
+  --repos=frontend,backend,mobile \
+  --title="API v2移行対応" \
+  --body="APIをv2に移行する作業を実施してください。詳細は関連Issueを参照。" \
+  --parent-issue="matsuri-tech/planning#123" \
+  --labels="migration,api,high-priority"
+
+# アサイニーを指定してCSV出力
+deno task start src/create-issues-bulk/index.ts \
+  --org=matsuri-tech \
+  --repos=web-app,api-server \
+  --title="TypeScript 5.0対応" \
+  --body="TypeScript 5.0にアップグレードしてください。" \
+  --assignees="dev-team-lead,senior-dev" \
+  --format=csv
+```
+
+#### 出力
+
+指定したディレクトリに `{組織名}-issue-creation-results.{json|csv}` というファイルが生成されます。
+
+- JSON形式の場合:
+```json
+{
+  "organization": "組織名",
+  "repositories": ["repo1", "repo2", "repo3"],
+  "title": "Issueタイトル",
+  "timestamp": "生成日時",
+  "summary": {
+    "totalRepositories": 3,
+    "successfulCreations": 2,
+    "failedCreations": 1
+  },
+  "results": [
+    {
+      "repository": "repo1",
+      "success": true,
+      "issueNumber": 123,
+      "issueUrl": "https://github.com/org/repo1/issues/123"
+    },
+    {
+      "repository": "repo2",
+      "success": true,
+      "issueNumber": 456,
+      "issueUrl": "https://github.com/org/repo2/issues/456"
+    },
+    {
+      "repository": "repo3",
+      "success": false,
+      "error": "Repository not found"
+    }
+  ],
+  "errors": [
+    {
+      "repository": "repo3",
+      "error": "Repository not found"
+    }
+  ]
+}
+```
+
+- CSV形式の場合:
+```csv
+repository,success,issueNumber,issueUrl,error
+repo1,true,123,"https://github.com/org/repo1/issues/123",""
+repo2,true,456,"https://github.com/org/repo2/issues/456",""
+repo3,false,"","","Repository not found"
+```
+
+#### 機能
+
+- **一括作成**: 複数リポジトリに同時にIssueを作成
+- **関連Issue**: 親Issueや関連Issueへの自動リンク挿入
+- **柔軟な設定**: ラベル、アサイニーの一括設定
+- **詳細な結果**: 成功・失敗の詳細レポート
+- **エラーハンドリング**: 個別のエラーを適切に処理し、継続実行
+- **Rate limit対策**: API制限に配慮した実行間隔制御
+
+また、実行結果のサマリーがコンソールに出力されます：
+```
+📊 Issue作成結果サマリー:
+- 組織: matsuri-tech
+- 対象リポジトリ数: 3
+- 成功: 2 件
+- 失敗: 1 件
+- 出力形式: json
+- 出力ファイル: .output/matsuri-tech-issue-creation-results.json
+
+✅ 成功したリポジトリ:
+  📁 repo1: Issue #123
+      https://github.com/matsuri-tech/repo1/issues/123
+  📁 repo2: Issue #456
+      https://github.com/matsuri-tech/repo2/issues/456
+
+❌ エラーが発生したリポジトリ:
+  📁 repo3: Repository not found
 ```
 
 ## list-renovate-status
@@ -618,6 +756,9 @@ deno task start src/list-open-prs/index.ts --org=your-org --format=csv
 
 # ファイル内文字列を検索
 deno task start src/search-files-in-org/index.ts --org=your-org --query="useEffect"
+
+# 複数リポジトリにIssueを一括作成
+deno task start src/create-issues-bulk/index.ts --org=your-org --repos=repo1,repo2 --title="Security Update" --body="Please update dependencies"
 ```
 
 ## 📁 プロジェクト構造
@@ -627,7 +768,8 @@ scripts/
 ├── src/                           # メインのソースコード
 │   ├── list-repos-in-org/         # リポジトリ一覧取得
 │   ├── list-dependabot-alerts/    # Dependabotアラート分析
-│   ├── create-issue.ts            # Issue作成
+│   ├── create-issue.ts            # Issue作成（単一）
+│   ├── create-issues-bulk/        # Issue一括作成
 │   ├── list-renovate-status/      # Renovate状況確認
 │   ├── search-actions-in-org/     # GitHub Actions分析
 │   ├── add-labels/                # ラベル管理
