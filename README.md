@@ -420,3 +420,139 @@ repository,number,title,url,createdAt,updatedAt,author
 - 出力形式: json/csv
 - 出力ファイル: ファイルパス
 ```
+
+### search-files-in-org
+
+組織内の全リポジトリで特定の拡張子のファイルから指定された文字列を検索し、JSONまたはCSVファイルとして出力します。
+アーカイブされたリポジトリは除外されます。GitHub Search APIを使用した一括検索により、rate limitを効率的に回避します。
+
+```bash
+deno task start src/search-files-in-org/index.ts --org=org-name --query=検索文字列 [--extensions=拡張子] [--output=出力ディレクトリ] [--format=出力形式]
+```
+
+#### オプション
+
+- `--org`: （必須）GitHubの組織名
+- `--query`: （必須）検索する文字列
+- `--extensions`: （オプション）検索対象の拡張子（カンマ区切り、デフォルト: `ts,js,tsx,jsx`）
+- `--output`: （オプション）出力ディレクトリのパス（デフォルト: `.output`）
+- `--format`: （オプション）出力形式（デフォルト: `json`）
+  - `json`: JSON形式で出力
+  - `csv`: CSV形式で出力
+
+#### 必要な権限
+
+GitHubトークンには以下の権限が必要です：
+- `repo`: リポジトリへのアクセス権限
+
+#### 使用例
+
+```bash
+# TypeScriptファイルで特定の関数を検索
+deno task start src/search-files-in-org/index.ts --org=matsuri-tech --query="useEffect" --extensions="ts,tsx"
+
+# 複数の拡張子でエラーハンドリングパターンを検索
+deno task start src/search-files-in-org/index.ts --org=matsuri-tech --query="try catch" --extensions="js,ts,jsx,tsx"
+
+# CSV形式で出力
+deno task start src/search-files-in-org/index.ts --org=matsuri-tech --query="console.log" --format=csv
+```
+
+#### 出力
+
+指定したディレクトリに `{組織名}-search-results.{json|csv}` というファイルが生成されます。
+
+- JSON形式の場合:
+```json
+{
+  "organization": "組織名",
+  "query": "検索クエリ",
+  "extensions": ["対象拡張子"],
+  "timestamp": "生成日時",
+  "summary": {
+    "totalRepositories": "検索でヒットしたリポジトリ数",
+    "repositoriesWithMatches": "マッチしたリポジトリ数",
+    "totalMatches": "総マッチ数",
+    "totalFiles": "マッチしたファイル数"
+  },
+  "results": [
+    {
+      "repository": "リポジトリ名",
+      "file": "ファイル名",
+      "path": "ファイルパス",
+      "url": "ファイルのURL",
+      "matches": [
+        {
+          "lineNumber": "行番号",
+          "line": "マッチした行の内容",
+          "context": ["前後の文脈を含む行の配列"]
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "repository": "エラーが発生したリポジトリ名",
+      "error": "エラーメッセージ"
+    }
+  ]
+}
+```
+
+- CSV形式の場合:
+```csv
+repository,file,path,url,lineNumber,matchedLine,contextBefore,contextAfter
+リポジトリ名,ファイル名,ファイルパス,ファイルのURL,行番号,"マッチした行","前の文脈","後の文脈"
+```
+
+#### 機能
+
+- **一括検索**: GitHub Search APIを使用した組織全体の効率的な検索
+- **文字列検索**: 大文字小文字を区別しない部分一致検索
+- **拡張子フィルター**: 指定された拡張子のファイルのみを対象
+- **文脈表示**: マッチした行の前後の文脈情報（GitHub APIの制限内で）
+- **詳細統計**: リポジトリ毎・ファイル毎のマッチ数を詳細表示
+- **スマート表示**: ファイル数が多い場合は上位結果のみ表示
+- **エラーハンドリング**: アクセス権限エラー等の適切な処理
+- **Rate limit対策**: 効率的なAPI使用でrate limit回避
+
+#### 検索方式の特徴
+
+- 従来の各リポジトリ個別検索ではなく、組織全体での一括検索を採用
+- GitHub Search APIのtext-match機能を活用して効率的にマッチ情報を取得
+- 拡張子毎に分割検索を行い、APIの検索制限に対応
+- 全件取得を目指し、GitHub Search APIの1000件制限まで完全にページネーション処理
+- 制限に達した場合は警告表示と詳細統計を提供
+
+また、実行結果のサマリーがコンソールに出力されます：
+```
+📊 検索結果サマリー:
+- 組織: 組織名
+- 検索クエリ: "検索文字列"
+- 対象拡張子: .ts, .js, .tsx, .jsx
+- 検索したリポジトリ数: リポジトリ数
+- マッチしたリポジトリ数: マッチしたリポジトリ数
+- マッチしたファイル数: ファイル数
+- 総マッチ数: マッチ数
+- エラー数: エラー数
+- 出力形式: json/csv
+- 出力ファイル: ファイルパス
+
+📋 リポジトリ毎のマッチ詳細:
+  📁 repo-name-1: 25 マッチ (3 ファイル)
+    📄 src/components/Button.tsx: 15 マッチ
+    📄 src/utils/helpers.ts: 8 マッチ
+    📄 src/pages/index.tsx: 2 マッチ
+  📁 repo-name-2: 12 マッチ (2 ファイル)
+    📄 lib/api.js: 10 マッチ
+    📄 config/settings.js: 2 マッチ
+
+📈 検索統計:
+  .ts: 150/200 件 ✅ 完全
+  .js: 1000/1500 件 ⚠️ 制限あり
+  .tsx: 50/50 件 ✅ 完全
+  .jsx: 25/25 件 ✅ 完全
+
+⚠️  注意: 一部の拡張子でGitHub Search APIの1000件制限に達しました
+   より多くの結果を取得するには、検索クエリをより具体的にしてください
+```
