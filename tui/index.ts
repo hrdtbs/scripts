@@ -12,7 +12,7 @@ const menuOptions: SelectOption<string>[] = [
     value: "hello",
   },
   {
-    name: "Issue一括作成",
+    name: "Bulk Issue Creation",
     value: "create-issues-bulk",
   },
   {
@@ -20,23 +20,23 @@ const menuOptions: SelectOption<string>[] = [
     value: "help",
   },
   {
-    name: "終了",
+    name: "Exit",
     value: "exit",
   },
 ];
 
 async function executeHello(): Promise<void> {
-  console.log("こんにちは！");
+  console.log("Hello!");
   await Deno.stdin.read(new Uint8Array(1));
 }
 
 async function executeHelp(): Promise<void> {
-  console.log("📚 ヘルプ");
+  console.log("📚 Help");
   console.log("=======");
-  console.log("Hello: 挨拶メッセージを表示");
-  console.log("Issue一括作成: 複数リポジトリにIssueを一括作成");
-  console.log("Help: このヘルプメッセージを表示");
-  console.log("終了: プログラムを終了");
+  console.log("Hello: Display greeting message");
+  console.log("Bulk Issue Creation: Create issues in multiple repositories");
+  console.log("Help: Show this help message");
+  console.log("Exit: Exit the program");
   await Deno.stdin.read(new Uint8Array(1));
 }
 
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     console.clear();
 
     const choice = await Select.prompt({
-      message: "選択してください:",
+      message: "Please select:",
       options: menuOptions,
     });
 

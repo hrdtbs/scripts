@@ -97,26 +97,23 @@ async function createIssuesBulk(
 
     // バリデーション
     if (!org) {
-      return { success: false, error: "組織名は必須です" };
+      return { success: false, error: "Organization name is required" };
     }
 
     if (!repos || repos.length === 0) {
-      return { success: false, error: "リポジトリ名は必須です" };
+      return { success: false, error: "Repository names are required" };
     }
 
     if (!title) {
-      return { success: false, error: "タイトルは必須です" };
+      return { success: false, error: "Title is required" };
     }
 
     if (!body) {
-      return { success: false, error: "本文は必須です" };
+      return { success: false, error: "Body is required" };
     }
 
     if (!["json", "csv"].includes(format)) {
-      return {
-        success: false,
-        error: "出力形式はjsonまたはcsvを指定してください",
-      };
+      return { success: false, error: "Format must be json or csv" };
     }
 
     // .envファイルの読み込み
@@ -124,7 +121,10 @@ async function createIssuesBulk(
     const token = env.GH_TOKEN;
 
     if (!token) {
-      return { success: false, error: "GH_TOKEN環境変数が設定されていません" };
+      return {
+        success: false,
+        error: "GH_TOKEN environment variable is not set",
+      };
     }
 
     const octokit = new Octokit({
@@ -234,75 +234,73 @@ async function main() {
 
   if (args.help) {
     console.log(`
-GitHub組織の複数リポジトリにIssueを一括作成するツール
+Bulk Issue Creation Tool for GitHub Organizations
 
-使用方法:
+Usage:
   deno run --allow-net --allow-read --allow-write --allow-env \\
     src/create-issues-bulk/index.ts \\
     --org=organization \\
     --repos=repo1,repo2,repo3 \\
-    --title="Issue タイトル" \\
-    --body="Issue 本文" \\
-    [オプション]
+    --title="Issue Title" \\
+    --body="Issue Body" \\
+    [options]
 
-必須オプション:
-  --org        対象の組織名
-  --repos      対象リポジトリ名（カンマ区切り）
-  --title      作成するIssueのタイトル
-  --body       作成するIssueの本文
+Required Options:
+  --org        Target organization name
+  --repos      Target repository names (comma-separated)
+  --title      Issue title to create
+  --body       Issue body content
 
-オプション:
-  --labels     追加するラベル（カンマ区切り）
-  --assignees  アサインするユーザー（カンマ区切り）
-  --output     出力ディレクトリ（デフォルト: .output）
-  --format     出力形式 json|csv（デフォルト: json）
-  --help       このヘルプを表示
+Options:
+  --labels     Labels to add (comma-separated)
+  --assignees  Users to assign (comma-separated)
+  --output     Output directory (default: .output)
+  --format     Output format json|csv (default: json)
+  --help       Show this help
 
-例:
+Examples:
   deno run --allow-net --allow-read --allow-write --allow-env \\
     src/create-issues-bulk/index.ts \\
     --org=myorg \\
     --repos=frontend,backend,docs \\
-    --title="セキュリティアップデート" \\
-    --body="依存関係のセキュリティアップデートを実施してください。" \\
+    --title="Security Update" \\
+    --body="Please update dependencies for security." \\
     --labels=security,maintenance \\
     --assignees=user1,user2
 
-環境変数:
-  GH_TOKEN     GitHub Personal Access Token (必須)
+Environment Variables:
+  GH_TOKEN     GitHub Personal Access Token (required)
 `);
     Deno.exit(0);
   }
 
   if (!args.org) {
-    console.error("エラー: --org オプションは必須です");
-    console.error("ヘルプを表示するには --help オプションを使用してください");
+    console.error("Error: --org option is required");
+    console.error("Use --help option to show help");
     Deno.exit(1);
   }
 
   if (!args.repos) {
-    console.error("エラー: --repos オプションは必須です");
-    console.error("例: --repos=repo1,repo2,repo3");
-    console.error("ヘルプを表示するには --help オプションを使用してください");
+    console.error("Error: --repos option is required");
+    console.error("Example: --repos=repo1,repo2,repo3");
+    console.error("Use --help option to show help");
     Deno.exit(1);
   }
 
   if (!args.title) {
-    console.error("エラー: --title オプションは必須です");
-    console.error("ヘルプを表示するには --help オプションを使用してください");
+    console.error("Error: --title option is required");
+    console.error("Use --help option to show help");
     Deno.exit(1);
   }
 
   if (!args.body) {
-    console.error("エラー: --body オプションは必須です");
-    console.error("ヘルプを表示するには --help オプションを使用してください");
+    console.error("Error: --body option is required");
+    console.error("Use --help option to show help");
     Deno.exit(1);
   }
 
   if (!["json", "csv"].includes(args.format)) {
-    console.error(
-      "エラー: --format オプションはjsonまたはcsvを指定してください"
-    );
+    console.error("Error: --format option must be json or csv");
     Deno.exit(1);
   }
 
@@ -332,7 +330,7 @@ GitHub組織の複数リポジトリにIssueを一括作成するツール
 
   if (result.summary) {
     console.log(
-      `Issue作成完了: 成功${result.summary.summary.successfulCreations}件, 失敗${result.summary.summary.failedCreations}件`
+      `Issue creation completed: ${result.summary.summary.successfulCreations} successful, ${result.summary.summary.failedCreations} failed`
     );
   }
 }
@@ -371,16 +369,16 @@ export async function executeCreateIssuesBulk(): Promise<void> {
   try {
     // 組織名の入力
     const org = await Input.prompt({
-      message: "組織名を入力してください:",
+      message: "Enter organization name:",
       validate: (value: string) =>
-        value.trim().length > 0 ? true : "組織名は必須です",
+        value.trim().length > 0 ? true : "Organization name is required",
     });
 
     // リポジトリ名の入力
     const reposInput = await Input.prompt({
-      message: "リポジトリ名をカンマ区切りで入力してください:",
+      message: "Enter repository names (comma-separated):",
       validate: (value: string) =>
-        value.trim().length > 0 ? true : "リポジトリ名は必須です",
+        value.trim().length > 0 ? true : "Repository names are required",
     });
     const repos = reposInput
       .split(",")
@@ -389,28 +387,28 @@ export async function executeCreateIssuesBulk(): Promise<void> {
 
     // タイトルの入力
     const title = await Input.prompt({
-      message: "Issueのタイトルを入力してください:",
+      message: "Enter issue title:",
       validate: (value: string) =>
-        value.trim().length > 0 ? true : "タイトルは必須です",
+        value.trim().length > 0 ? true : "Title is required",
     });
 
     // 本文の入力
     const body = await Input.prompt({
-      message: "Issueの本文を入力してください:",
+      message: "Enter issue body:",
       validate: (value: string) =>
-        value.trim().length > 0 ? true : "本文は必須です",
+        value.trim().length > 0 ? true : "Body is required",
     });
 
     // ラベルの入力（オプション）
     const useLabels = await Confirm.prompt({
-      message: "ラベルを追加しますか？",
+      message: "Add labels?",
       default: false,
     });
 
     let labels: string[] = [];
     if (useLabels) {
       const labelsInput = await Input.prompt({
-        message: "ラベル名をカンマ区切りで入力してください:",
+        message: "Enter label names (comma-separated):",
       });
       labels = labelsInput
         .split(",")
@@ -420,14 +418,14 @@ export async function executeCreateIssuesBulk(): Promise<void> {
 
     // アサイニーの入力（オプション）
     const useAssignees = await Confirm.prompt({
-      message: "アサイニーを指定しますか？",
+      message: "Add assignees?",
       default: false,
     });
 
     let assignees: string[] = [];
     if (useAssignees) {
       const assigneesInput = await Input.prompt({
-        message: "アサイニーのユーザー名をカンマ区切りで入力してください:",
+        message: "Enter assignee usernames (comma-separated):",
       });
       assignees = assigneesInput
         .split(",")
@@ -437,7 +435,7 @@ export async function executeCreateIssuesBulk(): Promise<void> {
 
     // 出力形式の選択
     const format = await Select.prompt({
-      message: "出力形式を選択してください:",
+      message: "Select output format:",
       options: [
         { name: "JSON", value: "json" },
         { name: "CSV", value: "csv" },
@@ -446,7 +444,7 @@ export async function executeCreateIssuesBulk(): Promise<void> {
     });
 
     const confirm = await Confirm.prompt({
-      message: "この内容でIssueを作成しますか？",
+      message: "Create issues with these settings?",
       default: true,
     });
 
@@ -469,13 +467,13 @@ export async function executeCreateIssuesBulk(): Promise<void> {
 
     if (result.success && result.summary) {
       console.log(
-        `Issue作成完了: 成功${result.summary.summary.successfulCreations}件, 失敗${result.summary.summary.failedCreations}件`
+        `Issue creation completed: ${result.summary.summary.successfulCreations} successful, ${result.summary.summary.failedCreations} failed`
       );
     } else {
-      console.log(`エラー: ${result.error}`);
+      console.log(`Error: ${result.error}`);
     }
   } catch (error) {
-    console.error("エラーが発生しました:", error);
+    console.error("An error occurred:", error);
   }
 }
 
