@@ -54,7 +54,6 @@ async function main(): Promise<void> {
   }
 }
 
-// deno run --allow-read --allow-write tui/index.ts
 if (import.meta.main) {
   main().catch(console.error);
 }
