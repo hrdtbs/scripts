@@ -694,6 +694,7 @@ deno task start tui/index.ts
 - **List Dependabot Alerts**: Dependabotアラートの収集・分析
 - **List Open Pull Requests**: オープンPR一覧の取得
 - **List Renovate Status**: Renovateの設定状況と依存関係管理状況の確認
+- **List Repositories in Organization**: 組織内のリポジトリ一覧取得
 
 ### 特徴
 

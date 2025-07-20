@@ -6,6 +6,7 @@ import { executeBulkAddLabels } from "../src/bulk-add-labels/index.ts";
 import { executeListDependabotAlerts } from "../src/list-dependabot-alerts/index.ts";
 import { executeListOpenPRs } from "../src/list-open-prs/index.ts";
 import { executeListRenovateStatus } from "../src/list-renovate-status/index.ts";
+import { executeListReposInOrg } from "../src/list-repos-in-org/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -33,6 +34,11 @@ const menuOptions = [
     name: "List Renovate Status",
     value: "list-renovate-status",
     execute: executeListRenovateStatus,
+  },
+  {
+    name: "List Repositories in Organization",
+    value: "list-repos-in-org",
+    execute: executeListReposInOrg,
   },
   {
     name: "Exit",
