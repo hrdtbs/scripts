@@ -1,5 +1,5 @@
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
-import { Octokit } from "https://esm.sh/@octokit/rest@20.0.2";
+import { Octokit } from "npm:@octokit/rest@20.0.2";
 import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
 
 // 型定義
@@ -41,8 +41,10 @@ const flags = parseArgs(Deno.args, {
 });
 
 const org: string = flags.org || "";
-const labelNames = flags.labels.split(",").map((label) => label.trim());
-const labelColors = flags.colors.split(",").map((color) => color.trim());
+const labelNames = flags.labels.split(",").map((label: string) => label.trim());
+const labelColors = flags.colors
+  .split(",")
+  .map((color: string) => color.trim());
 
 if (!token || !org || labelNames.length === 0) {
   console.error(
@@ -53,7 +55,7 @@ if (!token || !org || labelNames.length === 0) {
 }
 
 // ラベルと色のペアを作成
-const labels: Label[] = labelNames.map((name, index) => ({
+const labels: Label[] = labelNames.map((name: string, index: number) => ({
   name,
   color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
 }));

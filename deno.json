@@ -3,11 +3,10 @@
     "start": "deno run --allow-env --allow-net --allow-write --allow-read"
   },
   "compilerOptions": {
-    "allowJs": true,
     "strict": true,
     "lib": ["deno.window", "deno.ns"]
   },
   "imports": {
-    "@octokit/rest": "npm:@octokit/rest@19.0.4"
+    "@octokit/rest": "npm:@octokit/rest@20.0.2"
   }
 }
