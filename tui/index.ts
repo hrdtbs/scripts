@@ -5,6 +5,7 @@ import {
   type SelectOption,
 } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts";
 import { executeCreateIssuesBulk } from "../src/create-issues-bulk/index.ts";
+import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions: SelectOption<string>[] = [
   {
@@ -18,6 +19,8 @@ const menuOptions: SelectOption<string>[] = [
 ];
 
 async function main(): Promise<void> {
+  await ensureEnvToken();
+
   const choice = await Select.prompt({
     message: "Please select:",
     options: menuOptions,
