@@ -2,6 +2,7 @@
 
 import { Select } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts";
 import { executeCreateIssuesBulk } from "../src/create-issues-bulk/index.ts";
+import { executeAddLabels } from "../src/add-labels/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -9,6 +10,11 @@ const menuOptions = [
     name: "Bulk Issue Creation",
     value: "create-issues-bulk",
     execute: executeCreateIssuesBulk,
+  },
+  {
+    name: "Add Labels to Repositories",
+    value: "add-labels",
+    execute: executeAddLabels,
   },
   {
     name: "Exit",

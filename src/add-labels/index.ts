@@ -27,46 +27,34 @@ interface Label {
   color: string;
 }
 
-// .envファイルの読み込み
-const env = await load();
-const token = env.GH_TOKEN;
-
-// コマンドライン引数の解析
-const flags = parseArgs(Deno.args, {
-  string: ["org", "labels", "colors"],
-  default: {
-    labels: "",
-    colors: "",
-  },
-});
-
-const org: string = flags.org || "";
-const labelNames = flags.labels.split(",").map((label: string) => label.trim());
-const labelColors = flags.colors
-  .split(",")
-  .map((color: string) => color.trim());
-
-if (!token || !org || labelNames.length === 0) {
-  console.error(
-    "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
-  );
-  console.error("\n注意: .envファイルにGH_TOKENを設定してください");
-  Deno.exit(1);
+interface AddLabelsOptions {
+  org: string;
+  labels: Label[];
 }
 
-// ラベルと色のペアを作成
-const labels: Label[] = labelNames.map((name: string, index: number) => ({
-  name,
-  color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
-}));
+interface AddLabelsResult {
+  success: boolean;
+  summary?: {
+    totalRepositories: number;
+    successfulLabels: number;
+    failedLabels: number;
+    skippedLabels: number;
+  };
+  error?: string;
+}
 
 // Octokitの初期化
-const octokit = new Octokit({
-  auth: token,
-});
+function createOctokit(token: string): Octokit {
+  return new Octokit({
+    auth: token,
+  });
+}
 
 // リポジトリ一覧の取得
-async function getRepositories(): Promise<Repository[]> {
+async function getRepositories(
+  octokit: Octokit,
+  org: string
+): Promise<Repository[]> {
   const repos: Repository[] = [];
   let page = 1;
 
@@ -95,7 +83,21 @@ async function getRepositories(): Promise<Repository[]> {
 }
 
 // ラベルの追加
-async function addLabels(repoName: string, labels: Label[]) {
+async function addLabels(
+  octokit: Octokit,
+  org: string,
+  repoName: string,
+  labels: Label[]
+): Promise<{
+  success: boolean;
+  added: number;
+  skipped: number;
+  failed: number;
+}> {
+  let added = 0;
+  let skipped = 0;
+  let failed = 0;
+
   for (const label of labels) {
     try {
       await octokit.issues.createLabel({
@@ -104,48 +106,205 @@ async function addLabels(repoName: string, labels: Label[]) {
         name: label.name,
         color: label.color,
       });
-      console.log(
-        `✅ ${repoName}: ラベル "${label.name}" (色: ${label.color}) を追加しました`
-      );
+      added++;
     } catch (error) {
       const githubError = error as GitHubError;
       if (githubError.status === 422) {
-        console.log(`ℹ️ ${repoName}: ラベル "${label.name}" は既に存在します`);
+        skipped++;
       } else {
-        console.error(
-          `❌ ${repoName}: ラベル "${label.name}" の追加に失敗しました`,
-          error
-        );
+        failed++;
       }
     }
   }
+
+  return { success: true, added, skipped, failed };
 }
 
-// メイン処理
-async function main() {
+// メインのラベル追加ロジック
+async function addLabelsBulk(
+  options: AddLabelsOptions
+): Promise<AddLabelsResult> {
   try {
-    const repositories = await getRepositories();
-    const activeRepositories = repositories.filter((repo) => !repo.archived);
+    const { org, labels } = options;
 
-    console.log(
-      `\n📦 ${org} のアーカイブされていないリポジトリにラベルを追加します`
-    );
-    console.log(`📌 追加するラベル:`);
-    labels.forEach((label) => {
-      console.log(`  - ${label.name} (色: ${label.color})`);
-    });
-    console.log(`\n対象リポジトリ数: ${activeRepositories.length}\n`);
-
-    for (const repo of activeRepositories) {
-      console.log(`\n🔄 ${repo.name} の処理を開始します`);
-      await addLabels(repo.name, labels);
+    // バリデーション
+    if (!org) {
+      return { success: false, error: "Organization name is required" };
     }
 
-    console.log("\n✨ 処理が完了しました");
+    if (!labels || labels.length === 0) {
+      return { success: false, error: "Labels are required" };
+    }
+
+    // .envファイルの読み込み
+    const env = await load();
+    const token = env.GH_TOKEN;
+
+    if (!token) {
+      return {
+        success: false,
+        error: "GH_TOKEN environment variable is not set",
+      };
+    }
+
+    const octokit = createOctokit(token);
+    const repositories = await getRepositories(octokit, org);
+    const activeRepositories = repositories.filter((repo) => !repo.archived);
+
+    let totalSuccessful = 0;
+    let totalSkipped = 0;
+    let totalFailed = 0;
+
+    // 各リポジトリにラベルを追加
+    for (const repo of activeRepositories) {
+      const result = await addLabels(octokit, org, repo.name, labels);
+      totalSuccessful += result.added;
+      totalSkipped += result.skipped;
+      totalFailed += result.failed;
+
+      // Rate limit対策で少し待機
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    const summary = {
+      totalRepositories: activeRepositories.length,
+      successfulLabels: totalSuccessful,
+      failedLabels: totalFailed,
+      skippedLabels: totalSkipped,
+    };
+
+    return { success: true, summary };
   } catch (error) {
-    console.error("❌ エラーが発生しました:", error);
-    Deno.exit(1);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
   }
 }
 
-main();
+// CLI用のメイン処理
+async function main() {
+  const flags = parseArgs(Deno.args, {
+    string: ["org", "labels", "colors"],
+    default: {
+      labels: "",
+      colors: "",
+    },
+  });
+
+  const org: string = flags.org || "";
+  const labelNames = flags.labels
+    .split(",")
+    .map((label: string) => label.trim());
+  const labelColors = flags.colors
+    .split(",")
+    .map((color: string) => color.trim());
+
+  if (!org || labelNames.length === 0) {
+    console.error(
+      "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
+    );
+    console.error("\n注意: .envファイルにGH_TOKENを設定してください");
+    Deno.exit(1);
+  }
+
+  // ラベルと色のペアを作成
+  const labels: Label[] = labelNames.map((name: string, index: number) => ({
+    name,
+    color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
+  }));
+
+  const result = await addLabelsBulk({ org, labels });
+
+  if (!result.success) {
+    console.error(`Error: ${result.error}`);
+    Deno.exit(1);
+  }
+
+  if (result.summary) {
+    console.log(
+      `Label addition completed: ${result.summary.successfulLabels} added, ${result.summary.skippedLabels} skipped, ${result.summary.failedLabels} failed`
+    );
+  }
+}
+
+// TUI用の実行関数
+export async function executeAddLabels(): Promise<void> {
+  const { Input, Confirm } = await import(
+    "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/mod.ts"
+  );
+
+  try {
+    // 組織名の入力
+    const org = await Input.prompt({
+      message: "Enter organization name:",
+      validate: (value: string) =>
+        value.trim().length > 0 ? true : "Organization name is required",
+    });
+
+    // ラベル名の入力
+    const labelsInput = await Input.prompt({
+      message: "Enter label names (comma-separated):",
+      validate: (value: string) =>
+        value.trim().length > 0 ? true : "Label names are required",
+    });
+    const labelNames = labelsInput
+      .split(",")
+      .map((label: string) => label.trim())
+      .filter((label: string) => label.length > 0);
+
+    // 色の入力（オプション）
+    const useColors = await Confirm.prompt({
+      message: "Specify custom colors?",
+      default: false,
+    });
+
+    let labelColors: string[] = [];
+    if (useColors) {
+      const colorsInput = await Input.prompt({
+        message: "Enter colors (comma-separated, hex format like 000000):",
+      });
+      labelColors = colorsInput
+        .split(",")
+        .map((color: string) => color.trim())
+        .filter((color: string) => color.length > 0);
+    }
+
+    // ラベルと色のペアを作成
+    const labels: Label[] = labelNames.map((name: string, index: number) => ({
+      name,
+      color: labelColors[index] || "000000",
+    }));
+
+    const confirm = await Confirm.prompt({
+      message: "Add labels with these settings?",
+      default: true,
+    });
+
+    if (!confirm) {
+      return;
+    }
+
+    const options: AddLabelsOptions = {
+      org,
+      labels,
+    };
+
+    const result = await addLabelsBulk(options);
+
+    if (result.success && result.summary) {
+      console.log(
+        `Label addition completed: ${result.summary.successfulLabels} added, ${result.summary.skippedLabels} skipped, ${result.summary.failedLabels} failed`
+      );
+    } else {
+      console.log(`Error: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+}
+
+// Export functions for TUI
+export { addLabelsBulk, type AddLabelsOptions, type AddLabelsResult };
+
+if (import.meta.main) {
+  main();
+}
