@@ -41,27 +41,23 @@ async function executeHelp(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  while (true) {
-    console.clear();
+  const choice = await Select.prompt({
+    message: "Please select:",
+    options: menuOptions,
+  });
 
-    const choice = await Select.prompt({
-      message: "Please select:",
-      options: menuOptions,
-    });
-
-    switch (choice) {
-      case "hello":
-        await executeHello();
-        break;
-      case "create-issues-bulk":
-        await executeCreateIssuesBulk();
-        break;
-      case "help":
-        await executeHelp();
-        break;
-      case "exit":
-        Deno.exit(0);
-    }
+  switch (choice) {
+    case "hello":
+      await executeHello();
+      break;
+    case "create-issues-bulk":
+      await executeCreateIssuesBulk();
+      break;
+    case "help":
+      await executeHelp();
+      break;
+    case "exit":
+      Deno.exit(0);
   }
 }
 
