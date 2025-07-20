@@ -695,6 +695,7 @@ deno task start tui/index.ts
 - **List Open Pull Requests**: オープンPR一覧の取得
 - **List Renovate Status**: Renovateの設定状況と依存関係管理状況の確認
 - **List Repositories in Organization**: 組織内のリポジトリ一覧取得
+- **Search Actions in Organization**: 組織内でのGitHub Actions使用状況の検索・分析
 
 ### 特徴
 

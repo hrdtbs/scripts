@@ -7,6 +7,7 @@ import { executeListDependabotAlerts } from "../src/list-dependabot-alerts/index
 import { executeListOpenPRs } from "../src/list-open-prs/index.ts";
 import { executeListRenovateStatus } from "../src/list-renovate-status/index.ts";
 import { executeListReposInOrg } from "../src/list-repos-in-org/index.ts";
+import { executeSearchActionsInOrg } from "../src/search-actions-in-org/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -39,6 +40,11 @@ const menuOptions = [
     name: "List Repositories in Organization",
     value: "list-repos-in-org",
     execute: executeListReposInOrg,
+  },
+  {
+    name: "Search Actions in Organization",
+    value: "search-actions-in-org",
+    execute: executeSearchActionsInOrg,
   },
   {
     name: "Exit",
