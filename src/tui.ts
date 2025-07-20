@@ -1,9 +1,16 @@
 import { Select } from "cliffy/prompt/select.ts";
 import { Input } from "cliffy/prompt/input.ts";
 import { Secret } from "cliffy/prompt/secret.ts";
+import { load } from "std/dotenv/mod.ts";
 
 async function main() {
-  const ghToken = await Secret.prompt("Enter your GH_TOKEN:");
+  // .envファイルを読み込む
+  const env = await load();
+  let ghToken = env["GH_TOKEN"] || Deno.env.get("GH_TOKEN");
+
+  if (!ghToken) {
+    ghToken = await Secret.prompt("Enter your GH_TOKEN:");
+  }
 
   const scripts = [];
   for await (const dirEntry of Deno.readDir("./src")) {
