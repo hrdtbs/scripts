@@ -10,9 +10,10 @@ GitHub組織の管理や分析を行うDenoスクリプト集です。
 - [create-issues-bulk](#create-issues-bulk) - 複数リポジトリへのIssue一括作成
 - [list-renovate-status](#list-renovate-status) - Renovate稼働状況確認
 - [search-actions-in-org](#search-actions-in-org) - GitHub Actions使用状況分析
-- [add-labels](#add-labels) - ラベル一括追加
+- [bulk-add-labels](#bulk-add-labels) - ラベル一括追加
 - [list-open-prs](#list-open-prs) - オープンPR一覧取得
 - [search-files-in-org](#search-files-in-org) - 組織内ファイル文字列検索
+- [TUI](#tui) - テキストユーザーインターフェース
 - [🚀 セットアップ](#-セットアップ) - 環境構築・実行方法
 - [📁 プロジェクト構造](#-プロジェクト構造) - ディレクトリ構成
 
@@ -473,12 +474,12 @@ GitHubトークンには以下の権限が必要です：
   - 使用アクション数: 3
 ```
 
-## add-labels
+## bulk-add-labels
 
 組織内の全リポジトリに指定されたラベルを追加します。アーカイブされたリポジトリはスキップされます。
 
 ```bash
-deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]
+deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]
 ```
 
 #### オプション
@@ -504,10 +505,10 @@ GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```bash
 # ラベルを追加（デフォルトの黒色を使用）
-deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement
+deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement
 
 # ラベルと色を指定して追加
-deno task start src/add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00
+deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00
 ```
 
 #### 注意事項
@@ -671,6 +672,25 @@ repository,file,path,url,lineNumber,matchedLine,contextBefore,contextAfter
 - **エラーハンドリング**: アクセス権限エラー等の適切な処理
 - **Rate limit対策**: 効率的なAPI使用でrate limit回避
 
+## TUI
+
+テキストユーザーインターフェース（TUI）を使用して、対話的にスクリプトを実行できます。
+
+```bash
+deno task start tui/index.ts
+```
+
+### 利用可能な機能
+
+- **Bulk Issue Creation**: 複数リポジトリへのIssue一括作成
+- **Bulk Add Labels to Repositories**: 複数リポジトリへのラベル一括追加
+
+### 特徴
+
+- **対話的実行**: コマンドライン引数の代わりにプロンプトで設定
+- **環境変数自動設定**: `.env`ファイルが存在しない場合、GitHubトークンの入力を促す
+- **シンプルな操作**: メニューから選択するだけで実行可能
+
 #### 検索方式の特徴
 
 - 従来の各リポジトリ個別検索ではなく、組織全体での一括検索を採用
@@ -772,9 +792,13 @@ scripts/
 │   ├── create-issues-bulk/        # Issue一括作成
 │   ├── list-renovate-status/      # Renovate状況確認
 │   ├── search-actions-in-org/     # GitHub Actions分析
-│   ├── add-labels/                # ラベル管理
+│   ├── bulk-add-labels/           # ラベル一括追加
 │   ├── list-open-prs/             # PR管理
 │   └── search-files-in-org/       # ファイル検索
+├── tui/                           # テキストユーザーインターフェース
+│   └── index.ts                   # TUIメインスクリプト
+├── utils/                         # 共通ユーティリティ
+│   └── env.ts                     # 環境変数管理
 ├── .output/                       # 出力ファイル格納ディレクトリ
 ├── deno.json                      # Deno設定ファイル
 ├── deno.lock                      # 依存関係のロックファイル
