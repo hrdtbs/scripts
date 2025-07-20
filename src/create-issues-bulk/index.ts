@@ -1,6 +1,8 @@
-import { parse } from "https://deno.land/std@0.210.0/flags/mod.ts";
-import { Octokit } from "npm:@octokit/rest@22.0.0";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
+import { Octokit } from "npm:@octokit/rest@20.0.2";
+import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
+import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
+import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
 
 interface IssueCreationResult {
   repository: string;
@@ -62,7 +64,7 @@ async function createIssueInRepository(
 }
 
 async function main() {
-  const args = parse(Deno.args, {
+  const args = parseArgs(Deno.args, {
     string: [
       "org",
       "repos",
@@ -178,8 +180,18 @@ GitHub組織の複数リポジトリにIssueを一括作成するツール
     console.log(`- アサイニー: ${assignees.join(", ")}`);
   }
 
+  // .envファイルの読み込み
+  const env = await load();
+  const token = env.GH_TOKEN;
+
+  if (!token) {
+    console.error("エラー: GH_TOKEN環境変数が設定されていません");
+    console.error(".envファイルにGH_TOKENを設定してください");
+    Deno.exit(1);
+  }
+
   const octokit = new Octokit({
-    auth: Deno.env.get("GH_TOKEN"),
+    auth: token,
   });
 
   const results: IssueCreationResult[] = [];
@@ -253,10 +265,13 @@ GitHub組織の複数リポジトリにIssueを一括作成するツール
 
   // 出力
   const outputDir = args.output;
-  await Deno.mkdir(outputDir, { recursive: true });
+  await ensureDir(outputDir);
 
   const extension = args.format;
-  const outputPath = `${outputDir}/${args.org}-issue-creation-results.${extension}`;
+  const outputPath = join(
+    outputDir,
+    `${args.org}-issue-creation-results.${extension}`
+  );
 
   if (args.format === "csv") {
     const csvContent = convertToCSV(summary);
