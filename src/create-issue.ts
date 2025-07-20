@@ -1,4 +1,12 @@
 import { Octokit } from "npm:@octokit/rest@19.0.4";
+import { parse } from "https://deno.land/std@0.204.0/flags/mod.ts";
+
+const flags = parse(Deno.args, {
+  string: ["owner", "repos", "title", "body"],
+});
+
+const { owner, repos: reposStr, title, body } = flags;
+const repos = reposStr ? reposStr.split(",") : [];
 
 const auth = Deno.env.get("GH_TOKEN");
 
@@ -7,24 +15,18 @@ if (!auth) {
   Deno.exit(1);
 }
 
-// 設定
-const owner = "";
-const repos: string[] = [];
-const title = "";
-const body = [].join("\n");
-
 if (!owner) {
-  console.error("owner を設定してください");
+  console.error("--owner を設定してください");
   Deno.exit(1);
 }
 
 if (repos.length === 0) {
-  console.error("repos を設定してください");
+  console.error("--repos をカンマ区切りで設定してください");
   Deno.exit(1);
 }
 
 if (!title) {
-  console.error("title を設定してください");
+  console.error("--title を設定してください");
   Deno.exit(1);
 }
 
