@@ -27,12 +27,12 @@ interface Label {
   color: string;
 }
 
-interface AddLabelsOptions {
+interface BulkAddLabelsOptions {
   org: string;
   labels: Label[];
 }
 
-interface AddLabelsResult {
+interface BulkAddLabelsResult {
   success: boolean;
   summary?: {
     totalRepositories: number;
@@ -121,9 +121,9 @@ async function addLabels(
 }
 
 // メインのラベル追加ロジック
-async function addLabelsBulk(
-  options: AddLabelsOptions
-): Promise<AddLabelsResult> {
+async function bulkAddLabels(
+  options: BulkAddLabelsOptions
+): Promise<BulkAddLabelsResult> {
   try {
     const { org, labels } = options;
 
@@ -200,7 +200,7 @@ async function main() {
 
   if (!org || labelNames.length === 0) {
     console.error(
-      "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
+      "使用方法: deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
     );
     console.error("\n注意: .envファイルにGH_TOKENを設定してください");
     Deno.exit(1);
@@ -212,7 +212,7 @@ async function main() {
     color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
   }));
 
-  const result = await addLabelsBulk({ org, labels });
+  const result = await bulkAddLabels({ org, labels });
 
   if (!result.success) {
     console.error(`Error: ${result.error}`);
@@ -227,7 +227,7 @@ async function main() {
 }
 
 // TUI用の実行関数
-export async function executeAddLabels(): Promise<void> {
+export async function executeBulkAddLabels(): Promise<void> {
   const { Input, Confirm } = await import(
     "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/mod.ts"
   );
@@ -283,12 +283,12 @@ export async function executeAddLabels(): Promise<void> {
       return;
     }
 
-    const options: AddLabelsOptions = {
+    const options: BulkAddLabelsOptions = {
       org,
       labels,
     };
 
-    const result = await addLabelsBulk(options);
+    const result = await bulkAddLabels(options);
 
     if (result.success && result.summary) {
       console.log(
@@ -303,7 +303,7 @@ export async function executeAddLabels(): Promise<void> {
 }
 
 // Export functions for TUI
-export { addLabelsBulk, type AddLabelsOptions, type AddLabelsResult };
+export { bulkAddLabels, type BulkAddLabelsOptions, type BulkAddLabelsResult };
 
 if (import.meta.main) {
   main();
