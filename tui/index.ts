@@ -1,14 +1,14 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-net --allow-env
 
 import { Select } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts";
-import { executeCreateIssuesBulk } from "../src/create-issues-bulk/index.ts";
+import { executeCreateIssuesBulk } from "../src/bulk-create-issues/index.ts";
 import { executeBulkAddLabels } from "../src/bulk-add-labels/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
   {
-    name: "Bulk Issue Creation",
-    value: "create-issues-bulk",
+    name: "Bulk Create Issues",
+    value: "bulk-create-issues",
     execute: executeCreateIssuesBulk,
   },
   {

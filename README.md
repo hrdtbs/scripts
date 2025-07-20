@@ -7,7 +7,7 @@ GitHub組織の管理や分析を行うDenoスクリプト集です。
 - [list-repos-in-org](#list-repos-in-org) - 組織のリポジトリ一覧取得
 - [list-dependabot-alerts](#list-dependabot-alerts) - Dependabotアラート収集・分析
 - [create-issue](#create-issue) - Issue作成
-- [create-issues-bulk](#create-issues-bulk) - 複数リポジトリへのIssue一括作成
+- [bulk-create-issues](#bulk-create-issues) - 複数リポジトリへのIssue一括作成
 - [list-renovate-status](#list-renovate-status) - Renovate稼働状況確認
 - [search-actions-in-org](#search-actions-in-org) - GitHub Actions使用状況分析
 - [bulk-add-labels](#bulk-add-labels) - ラベル一括追加
@@ -182,12 +182,12 @@ GitHubトークンには以下の権限が必要です：
 deno run --allow-env --allow-net src/create-issue.ts --repo=repo-name
 ```
 
-## create-issues-bulk
+## bulk-create-issues
 
 指定された複数のリポジトリに同じタイトル、ボディ、関連Issueを持つIssueを一括作成します。
 
 ```bash
-deno task start src/create-issues-bulk/index.ts --org=org-name --repos=repo1,repo2,repo3 --title="Issue Title" --body="Issue Body" [--parent-issue=親Issue] [--labels=label1,label2] [--assignees=user1,user2] [--output=出力ディレクトリ] [--format=出力形式]
+deno task start src/bulk-create-issues/index.ts --org=org-name --repos=repo1,repo2,repo3 --title="Issue Title" --body="Issue Body" [--parent-issue=親Issue] [--labels=label1,label2] [--assignees=user1,user2] [--output=出力ディレクトリ] [--format=出力形式]
 ```
 
 #### オプション
@@ -213,14 +213,14 @@ GitHubトークンには以下の権限が必要です：
 
 ```bash
 # 基本的な使用例
-deno task start src/create-issues-bulk/index.ts \
+deno task start src/bulk-create-issues/index.ts \
   --org=matsuri-tech \
   --repos=repo1,repo2,repo3 \
   --title="セキュリティアップデート対応" \
   --body="依存関係のセキュリティアップデートを実施してください。"
 
 # 関連Issueとラベルを指定
-deno task start src/create-issues-bulk/index.ts \
+deno task start src/bulk-create-issues/index.ts \
   --org=matsuri-tech \
   --repos=frontend,backend,mobile \
   --title="API v2移行対応" \
@@ -229,7 +229,7 @@ deno task start src/create-issues-bulk/index.ts \
   --labels="migration,api,high-priority"
 
 # アサイニーを指定してCSV出力
-deno task start src/create-issues-bulk/index.ts \
+deno task start src/bulk-create-issues/index.ts \
   --org=matsuri-tech \
   --repos=web-app,api-server \
   --title="TypeScript 5.0対応" \
@@ -682,7 +682,7 @@ deno task start tui/index.ts
 
 ### 利用可能な機能
 
-- **Bulk Issue Creation**: 複数リポジトリへのIssue一括作成
+- **Bulk Create Issues**: 複数リポジトリへのIssue一括作成
 - **Bulk Add Labels to Repositories**: 複数リポジトリへのラベル一括追加
 
 ### 特徴
@@ -778,7 +778,7 @@ deno task start src/list-open-prs/index.ts --org=your-org --format=csv
 deno task start src/search-files-in-org/index.ts --org=your-org --query="useEffect"
 
 # 複数リポジトリにIssueを一括作成
-deno task start src/create-issues-bulk/index.ts --org=your-org --repos=repo1,repo2 --title="Security Update" --body="Please update dependencies"
+deno task start src/bulk-create-issues/index.ts --org=your-org --repos=repo1,repo2 --title="Security Update" --body="Please update dependencies"
 ```
 
 ## 📁 プロジェクト構造
@@ -789,7 +789,7 @@ scripts/
 │   ├── list-repos-in-org/         # リポジトリ一覧取得
 │   ├── list-dependabot-alerts/    # Dependabotアラート分析
 │   ├── create-issue.ts            # Issue作成（単一）
-│   ├── create-issues-bulk/        # Issue一括作成
+│   ├── bulk-create-issues/        # Issue一括作成
 │   ├── list-renovate-status/      # Renovate状況確認
 │   ├── search-actions-in-org/     # GitHub Actions分析
 │   ├── bulk-add-labels/           # ラベル一括追加
