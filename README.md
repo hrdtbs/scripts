@@ -693,6 +693,7 @@ deno task start tui/index.ts
 - **Bulk Add Labels to Repositories**: 複数リポジトリへのラベル一括追加
 - **List Dependabot Alerts**: Dependabotアラートの収集・分析
 - **List Open Pull Requests**: オープンPR一覧の取得
+- **List Renovate Status**: Renovateの設定状況と依存関係管理状況の確認
 
 ### 特徴
 
