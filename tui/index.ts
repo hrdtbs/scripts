@@ -4,6 +4,7 @@ import { Select } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts"
 import { executeCreateIssuesBulk } from "../src/bulk-create-issues/index.ts";
 import { executeBulkAddLabels } from "../src/bulk-add-labels/index.ts";
 import { executeListDependabotAlerts } from "../src/list-dependabot-alerts/index.ts";
+import { executeListOpenPRs } from "../src/list-open-prs/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -21,6 +22,11 @@ const menuOptions = [
     name: "List Dependabot Alerts",
     value: "list-dependabot-alerts",
     execute: executeListDependabotAlerts,
+  },
+  {
+    name: "List Open Pull Requests",
+    value: "list-open-prs",
+    execute: executeListOpenPRs,
   },
   {
     name: "Exit",
