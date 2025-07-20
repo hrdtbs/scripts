@@ -479,7 +479,7 @@ GitHubトークンには以下の権限が必要です：
 組織内の全リポジトリに指定されたラベルを追加します。アーカイブされたリポジトリはスキップされます。
 
 ```bash
-deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]
+deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...] [--repos=REPO1,REPO2,...]
 ```
 
 #### オプション
@@ -487,6 +487,7 @@ deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,
 - `--org`: （必須）GitHubの組織名
 - `--labels`: （必須）追加するラベルの名前（カンマ区切り）
 - `--colors`: （オプション）ラベルの色（カンマ区切り、6桁の16進数）
+- `--repos`: （オプション）対象リポジトリ名（カンマ区切り、未指定の場合は全リポジトリ）
 
 #### 必要な権限
 
@@ -504,10 +505,13 @@ GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 #### 例
 
 ```bash
-# ラベルを追加（デフォルトの黒色を使用）
+# 全リポジトリにラベルを追加（デフォルトの黒色を使用）
 deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement
 
-# ラベルと色を指定して追加
+# 指定リポジトリにラベルと色を指定して追加
+deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00 --repos=frontend,backend
+
+# 全リポジトリにラベルと色を指定して追加
 deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enhancement --colors=FF0000,00FF00
 ```
 
@@ -516,6 +520,8 @@ deno task start src/bulk-add-labels/index.ts --org=matsuri-tech --labels=bug,enh
 - 既に存在するラベルはスキップされます
 - 色が指定されていないラベルにはデフォルトの黒色（`000000`）が使用されます
 - 色の数がラベルの数より少ない場合は、残りのラベルにはデフォルトの黒色が使用されます
+- `--repos`オプションを指定しない場合は、アーカイブされていない全リポジトリが対象になります
+- 指定されたリポジトリが組織内に存在しない場合は警告が表示され、スキップされます
 
 ## list-open-prs
 

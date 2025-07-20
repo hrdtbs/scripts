@@ -30,6 +30,7 @@ interface Label {
 interface BulkAddLabelsOptions {
   org: string;
   labels: Label[];
+  repositories?: string[]; // 指定されたリポジトリ名の配列（未指定の場合は全リポジトリ）
 }
 
 interface BulkAddLabelsResult {
@@ -125,7 +126,7 @@ async function bulkAddLabels(
   options: BulkAddLabelsOptions
 ): Promise<BulkAddLabelsResult> {
   try {
-    const { org, labels } = options;
+    const { org, labels, repositories } = options;
 
     // バリデーション
     if (!org) {
@@ -148,15 +149,38 @@ async function bulkAddLabels(
     }
 
     const octokit = createOctokit(token);
-    const repositories = await getRepositories(octokit, org);
-    const activeRepositories = repositories.filter((repo) => !repo.archived);
+
+    let targetRepositories: Repository[] = [];
+
+    if (repositories && repositories.length > 0) {
+      // 指定されたリポジトリのみを対象とする
+      const allRepositories = await getRepositories(octokit, org);
+      const allReposMap = new Map(
+        allRepositories.map((repo) => [repo.name, repo])
+      );
+
+      for (const repoName of repositories) {
+        const repo = allReposMap.get(repoName);
+        if (repo) {
+          targetRepositories.push(repo);
+        } else {
+          console.log(
+            `Warning: Repository "${repoName}" not found in organization "${org}"`
+          );
+        }
+      }
+    } else {
+      // 全リポジトリを対象とする
+      const allRepositories = await getRepositories(octokit, org);
+      targetRepositories = allRepositories.filter((repo) => !repo.archived);
+    }
 
     let totalSuccessful = 0;
     let totalSkipped = 0;
     let totalFailed = 0;
 
     // 各リポジトリにラベルを追加
-    for (const repo of activeRepositories) {
+    for (const repo of targetRepositories) {
       const result = await addLabels(octokit, org, repo.name, labels);
       totalSuccessful += result.added;
       totalSkipped += result.skipped;
@@ -167,7 +191,7 @@ async function bulkAddLabels(
     }
 
     const summary = {
-      totalRepositories: activeRepositories.length,
+      totalRepositories: targetRepositories.length,
       successfulLabels: totalSuccessful,
       failedLabels: totalFailed,
       skippedLabels: totalSkipped,
@@ -183,10 +207,11 @@ async function bulkAddLabels(
 // CLI用のメイン処理
 async function main() {
   const flags = parseArgs(Deno.args, {
-    string: ["org", "labels", "colors"],
+    string: ["org", "labels", "colors", "repos"],
     default: {
       labels: "",
       colors: "",
+      repos: "",
     },
   });
 
@@ -197,12 +222,19 @@ async function main() {
   const labelColors = flags.colors
     .split(",")
     .map((color: string) => color.trim());
+  const repositories = flags.repos
+    .split(",")
+    .map((repo: string) => repo.trim())
+    .filter((repo: string) => repo.length > 0);
 
   if (!org || labelNames.length === 0) {
     console.error(
-      "使用方法: deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
+      "使用方法: deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...] [--repos=REPO1,REPO2,...]"
     );
     console.error("\n注意: .envファイルにGH_TOKENを設定してください");
+    console.error(
+      "\n--reposオプションを指定しない場合は、全リポジトリが対象になります"
+    );
     Deno.exit(1);
   }
 
@@ -212,7 +244,11 @@ async function main() {
     color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
   }));
 
-  const result = await bulkAddLabels({ org, labels });
+  const result = await bulkAddLabels({
+    org,
+    labels,
+    repositories: repositories.length > 0 ? repositories : undefined,
+  });
 
   if (!result.success) {
     console.error(`Error: ${result.error}`);
@@ -228,7 +264,7 @@ async function main() {
 
 // TUI用の実行関数
 export async function executeBulkAddLabels(): Promise<void> {
-  const { Input, Confirm } = await import(
+  const { Input, Confirm, Select } = await import(
     "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/mod.ts"
   );
 
@@ -239,6 +275,29 @@ export async function executeBulkAddLabels(): Promise<void> {
       validate: (value: string) =>
         value.trim().length > 0 ? true : "Organization name is required",
     });
+
+    // リポジトリ選択モードの選択
+    const mode = await Select.prompt({
+      message: "Select repository mode:",
+      options: [
+        { name: "All repositories (excluding archived)", value: "all" },
+        { name: "Specify repositories", value: "specific" },
+      ],
+      default: "all",
+    });
+
+    let repositories: string[] | undefined;
+    if (mode === "specific") {
+      const reposInput = await Input.prompt({
+        message: "Enter repository names (comma-separated):",
+        validate: (value: string) =>
+          value.trim().length > 0 ? true : "Repository names are required",
+      });
+      repositories = reposInput
+        .split(",")
+        .map((repo: string) => repo.trim())
+        .filter((repo: string) => repo.length > 0);
+    }
 
     // ラベル名の入力
     const labelsInput = await Input.prompt({
@@ -274,6 +333,20 @@ export async function executeBulkAddLabels(): Promise<void> {
       color: labelColors[index] || "000000",
     }));
 
+    // 設定内容の確認
+    console.log("\n📋 Settings:");
+    console.log(`Organization: ${org}`);
+    console.log(
+      `Repositories: ${
+        mode === "all"
+          ? "All repositories (excluding archived)"
+          : repositories?.join(", ")
+      }`
+    );
+    console.log(
+      `Labels: ${labels.map((l) => `${l.name} (${l.color})`).join(", ")}`
+    );
+
     const confirm = await Confirm.prompt({
       message: "Add labels with these settings?",
       default: true,
@@ -286,6 +359,7 @@ export async function executeBulkAddLabels(): Promise<void> {
     const options: BulkAddLabelsOptions = {
       org,
       labels,
+      repositories,
     };
 
     const result = await bulkAddLabels(options);
