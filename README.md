@@ -61,7 +61,7 @@ deno task start src/list-repos-in-org/index.ts --org=org-name [--output=出力�
 組織内の全リポジトリのDependabotアラートを取得し、JSONファイルとして出力します。
 
 ```bash
-deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出力ディレクトリ] [--state=アラートの状態] [--format=出力形式]
+deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出力ディレクトリ] [--state=アラートの状態] [--format=出力形式] [--repos=REPO1,REPO2,...]
 ```
 
 #### オプション
@@ -76,6 +76,7 @@ deno task start src/list-dependabot-alerts/index.ts --org=org-name [--output=出
 - `--format`: （オプション）出力形式（デフォルト: `json`）
   - `json`: JSON形式で出力
   - `csv`: CSV形式で出力
+- `--repos`: （オプション）対象リポジトリ名（カンマ区切り、未指定の場合は全リポジトリ）
 
 #### 必要な権限
 
@@ -690,6 +691,7 @@ deno task start tui/index.ts
 
 - **Bulk Create Issues**: 複数リポジトリへのIssue一括作成
 - **Bulk Add Labels to Repositories**: 複数リポジトリへのラベル一括追加
+- **List Dependabot Alerts**: Dependabotアラートの収集・分析
 
 ### 特徴
 
