@@ -1,14 +1,19 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-net --allow-env
 
 import {
   Select,
   type SelectOption,
 } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts";
+import { executeCreateIssuesBulk } from "../src/create-issues-bulk/index.ts";
 
 const menuOptions: SelectOption<string>[] = [
   {
     name: "Hello",
     value: "hello",
+  },
+  {
+    name: "Issue一括作成",
+    value: "create-issues-bulk",
   },
   {
     name: "Help",
@@ -26,8 +31,11 @@ async function executeHello(): Promise<void> {
 }
 
 async function executeHelp(): Promise<void> {
+  console.log("📚 ヘルプ");
+  console.log("=======");
   console.log("Hello: 挨拶メッセージを表示");
-  console.log("Help: ヘルプメッセージを表示");
+  console.log("Issue一括作成: 複数リポジトリにIssueを一括作成");
+  console.log("Help: このヘルプメッセージを表示");
   console.log("終了: プログラムを終了");
   await Deno.stdin.read(new Uint8Array(1));
 }
@@ -44,6 +52,9 @@ async function main(): Promise<void> {
     switch (choice) {
       case "hello":
         await executeHello();
+        break;
+      case "create-issues-bulk":
+        await executeCreateIssuesBulk();
         break;
       case "help":
         await executeHelp();
