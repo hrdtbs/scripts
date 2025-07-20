@@ -1,6 +1,22 @@
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { Octokit } from "https://esm.sh/@octokit/rest@20.0.2";
 import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import type { Input } from "cliffy/prompt/mod.ts";
+
+export const argh = {
+  org: {
+    type: "string",
+    prompt: (p: typeof Input) => p.prompt("GitHub organization:"),
+  },
+  labels: {
+    type: "string",
+    prompt: (p: typeof Input) => p.prompt("Labels (comma-separated):"),
+  },
+  colors: {
+    type: "string",
+    prompt: (p: typeof Input) => p.prompt("Colors (comma-separated):"),
+  },
+};
 
 // 型定義
 interface Repository {
@@ -27,44 +43,9 @@ interface Label {
   color: string;
 }
 
-// .envファイルの読み込み
-const env = await load();
-const token = env.GH_TOKEN;
-
-// コマンドライン引数の解析
-const flags = parseArgs(Deno.args, {
-  string: ["org", "labels", "colors"],
-  default: {
-    labels: "",
-    colors: "",
-  },
-});
-
-const org: string = flags.org || "";
-const labelNames = flags.labels.split(",").map((label) => label.trim());
-const labelColors = flags.colors.split(",").map((color) => color.trim());
-
-if (!token || !org || labelNames.length === 0) {
-  console.error(
-    "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
-  );
-  console.error("\n注意: .envファイルにGH_TOKENを設定してください");
-  Deno.exit(1);
-}
-
-// ラベルと色のペアを作成
-const labels: Label[] = labelNames.map((name, index) => ({
-  name,
-  color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
-}));
-
-// Octokitの初期化
-const octokit = new Octokit({
-  auth: token,
-});
 
 // リポジトリ一覧の取得
-async function getRepositories(): Promise<Repository[]> {
+async function getRepositories(octokit: Octokit, org: string): Promise<Repository[]> {
   const repos: Repository[] = [];
   let page = 1;
 
@@ -93,8 +74,14 @@ async function getRepositories(): Promise<Repository[]> {
 }
 
 // ラベルの追加
-async function addLabels(repoName: string, labels: Label[]) {
+async function addLabels(octokit: Octokit | null, org: string, repoName: string, labels: Label[], isDryRun: boolean) {
   for (const label of labels) {
+    console.log(
+      `${isDryRun ? "[DRY RUN] " : ""} ${repoName}: ラベル "${label.name}" (色: ${label.color}) を追加します`
+    );
+    if (isDryRun || !octokit) {
+      continue;
+    }
     try {
       await octokit.issues.createLabel({
         owner: org,
@@ -121,13 +108,58 @@ async function addLabels(repoName: string, labels: Label[]) {
 
 // メイン処理
 async function main() {
+  const env = await load();
+  const token = env.GH_TOKEN;
+
+  const flags = parseArgs(Deno.args, {
+    string: ["org", "labels", "colors"],
+    boolean: ["dry-run"],
+    default: {
+      labels: "",
+      colors: "",
+      "dry-run": false,
+    },
+  });
+
+  const org: string = flags.org || "";
+  const labelNames = flags.labels.split(",").map((label) => label.trim());
+  const labelColors = flags.colors.split(",").map((color) => color.trim());
+
+  const isDryRun = flags["dry-run"];
+
+  if (!isDryRun && !token) {
+    console.error("GH_TOKENが設定されていません。");
+    Deno.exit(1);
+  }
+
+  if (!org || labelNames.length === 0) {
+    console.error(
+      "使用方法: deno task start src/add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...]"
+    );
+    Deno.exit(1);
+  }
+
+  const labels: Label[] = labelNames.map((name, index) => ({
+    name,
+    color: labelColors[index] || "000000", // 色が指定されていない場合はデフォルトの黒色を使用
+  }));
+
+  const octokit = isDryRun ? null : new Octokit({
+    auth: token,
+  });
+
   try {
-    const repositories = await getRepositories();
+    const repositories = (isDryRun || !octokit) ? [] : await getRepositories(octokit, org);
     const activeRepositories = repositories.filter((repo) => !repo.archived);
 
-    console.log(
-      `\n📦 ${org} のアーカイブされていないリポジトリにラベルを追加します`
-    );
+    if (isDryRun) {
+      console.log("[DRY RUN] 以下のリポジトリにラベルを追加します (API呼び出しは行いません):");
+    } else {
+      console.log(
+        `\n📦 ${org} のアーカイブされていないリポジトリにラベルを追加します`
+      );
+    }
+
     console.log(`📌 追加するラベル:`);
     labels.forEach((label) => {
       console.log(`  - ${label.name} (色: ${label.color})`);
@@ -136,7 +168,7 @@ async function main() {
 
     for (const repo of activeRepositories) {
       console.log(`\n🔄 ${repo.name} の処理を開始します`);
-      await addLabels(repo.name, labels);
+      await addLabels(octokit, org, repo.name, labels, isDryRun);
     }
 
     console.log("\n✨ 処理が完了しました");
@@ -146,4 +178,6 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
