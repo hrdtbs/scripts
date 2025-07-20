@@ -1,7 +1,7 @@
 import { Octokit } from "npm:@octokit/rest@19.0.4";
-import { parse } from "https://deno.land/std@0.204.0/flags/mod.ts";
+import { parseArgs } from "https://deno.land/std@0.224.0/cli/parse_args.ts";
 
-const flags = parse(Deno.args, {
+const flags = parseArgs(Deno.args, {
   string: ["owner", "repos", "title", "body"],
 });
 

@@ -1,7 +1,7 @@
 {
   "tasks": {
     "start": "deno run --allow-env --allow-net --allow-write --allow-read",
-    "tui": "deno run --allow-read --allow-env --allow-run --allow-net src/tui.ts"
+    "tui": "deno run --allow-read --allow-env --allow-run --allow-net --env src/tui.ts"
   },
   "compilerOptions": {
     "allowJs": true,
@@ -10,7 +10,6 @@
   },
   "imports": {
     "@octokit/rest": "npm:@octokit/rest@19.0.4",
-    "cliffy/": "https://deno.land/x/cliffy@v1.0.0-rc.3/",
-    "std/": "https://deno.land/std@0.224.0/"
+    "cliffy/": "https://deno.land/x/cliffy@v1.0.0-rc.3/"
   }
 }
