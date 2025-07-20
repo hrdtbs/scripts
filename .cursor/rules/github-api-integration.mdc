@@ -1,0 +1,55 @@
+---
+globs: src/**/*.ts
+---
+# GitHub API Integration Guidelines
+
+## Octokit設定
+- `@octokit/rest`を使用
+- トークンは環境変数から取得
+- 適切な権限設定を確認
+
+## API制限対策
+- Rate limitingへの対応
+- ページネーション処理
+- エラーハンドリング
+
+## 共通パターン
+
+### リポジトリ取得
+```typescript
+const repos = await octokit.repos.listForOrg({
+  org: organization,
+  per_page: 100,
+  type: "all"
+});
+```
+
+### 検索API使用
+```typescript
+const searchResults = await octokit.search.code({
+  q: `org:${organization} ${query}`,
+  per_page: 100
+});
+```
+
+### エラーハンドリング
+```typescript
+try {
+  // API呼び出し
+} catch (error) {
+  if (error.status === 403) {
+    // Rate limit or permission error
+  }
+  // 適切なエラーログ
+}
+```
+
+## 権限要件
+- `repo`: リポジトリアクセス
+- `security_events`: Dependabotアラート用
+- `read:org`: 組織情報読み取り
+
+## 出力形式
+- JSON: 詳細データ構造
+- CSV: 表計算ソフト用
+- サマリー情報のコンソール出力

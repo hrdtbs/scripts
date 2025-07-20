@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+---
+# Deno Scripts Development Guidelines
+
+## プロジェクト構造
+このプロジェクトはGitHub組織管理用のDenoスクリプト集です。TUI（Text User Interface）を中心とした設計になっています。
+
+### 主要ファイル
+- [tui/index.ts](mdc:tui/index.ts): メインのTUIインターフェース
+- [deno.json](mdc:deno.json): Deno設定ファイル
+- [README.md](mdc:README.md): プロジェクトドキュメント
+
+## スクリプト開発規約
+
+### 1. モジュラー設計
+各スクリプトは以下の構造に従ってください：
+
+```typescript
+// メイン関数（再利用可能）
+export async function scriptName(options: ScriptOptions): Promise<ScriptResult> {
+  // メインロジック
+}
+
+// TUI実行関数
+export async function executeScriptName(): Promise<void> {
+  // TUIプロンプトとメイン関数の呼び出し
+}
+
+// CLI実行関数
+if (import.meta.main) {
+  // CLI引数解析とメイン関数の呼び出し
+}
+```
+
+### 2. 環境変数管理
+- `.env`ファイルを使用
+- Denoのdotenvモジュールで読み込み
+- GitHubトークンは`GH_TOKEN`として設定
+
+### 3. CLI引数解析
+- Denoの`parseArgs`を使用
+- 必須パラメータの検証
+- 適切なエラーメッセージ
+
+### 4. TUI統合
+- Cliffy promptライブラリを使用
+- 対話的な入力処理
+- [tui/index.ts](mdc:tui/index.ts)にメニュー項目を追加
+
+### 5. 出力形式
+- JSON形式（デフォルト）
+- CSV形式（オプション）
+- `.output/`ディレクトリに保存
+
+### 6. エラーハンドリング
+- GitHub API制限への対応
+- 適切なエラーメッセージ
+- 継続実行可能な設計
+
+## 既存スクリプト
+- [src/list-open-prs/index.ts](mdc:src/list-open-prs/index.ts): オープンPR一覧
+- [src/list-renovate-status/index.ts](mdc:src/list-renovate-status/index.ts): Renovate状況
+- [src/list-repos-in-org/index.ts](mdc:src/list-repos-in-org/index.ts): リポジトリ一覧
+- [src/search-actions-in-org/index.ts](mdc:src/search-actions-in-org/index.ts): Actions検索
+- [src/search-files-in-org/index.ts](mdc:src/search-files-in-org/index.ts): ファイル検索
+
+## 実行権限
+- `--allow-env`: 環境変数読み取り
+- `--allow-net`: ネットワークアクセス
+- `--allow-read`: ファイル読み取り
+- `--allow-write`: ファイル書き込み
