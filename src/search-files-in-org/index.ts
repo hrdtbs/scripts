@@ -1,6 +1,8 @@
-import { parse } from "https://deno.land/std@0.210.0/flags/mod.ts";
+import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { Octokit } from "npm:@octokit/rest@20.0.2";
-import "https://deno.land/std@0.210.0/dotenv/load.ts";
+import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
+import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
 
 interface SearchResult {
   repository: string;
@@ -34,6 +36,44 @@ interface SearchSummary {
   }>;
 }
 
+interface SearchFilesInOrgOptions {
+  org: string;
+  query: string;
+  extensions?: string[];
+  output?: string;
+  format?: "json" | "csv";
+}
+
+interface SearchFilesInOrgResult {
+  success: boolean;
+  summary?: {
+    organization: string;
+    query: string;
+    extensions: string[];
+    timestamp: string;
+    totalRepositories: number;
+    repositoriesWithMatches: number;
+    totalMatches: number;
+    totalFiles: number;
+    errorCount: number;
+    searchStats: Array<{
+      extension: string;
+      totalFound: number;
+      retrieved: number;
+      hitLimit: boolean;
+    }>;
+  };
+  outputPath?: string;
+  error?: string;
+}
+
+// Octokitの初期化
+function createOctokit(token: string): Octokit {
+  return new Octokit({
+    auth: token,
+  });
+}
+
 async function searchInOrganization(
   octokit: Octokit,
   org: string,
@@ -61,7 +101,7 @@ async function searchInOrganization(
   try {
     // 拡張子毎に検索を実行（GitHub Search APIの制限により）
     for (const extension of extensions) {
-      console.log(`🔍 検索中: .${extension.replace(".", "")} ファイル`);
+      console.log(`🔍 Searching: .${extension.replace(".", "")} files`);
 
       let page = 1;
       let hasNextPage = true;
@@ -83,7 +123,7 @@ async function searchInOrganization(
             },
           });
 
-          console.log(`  ページ ${page}: ${data.items.length} 件の結果`);
+          console.log(`  Page ${page}: ${data.items.length} results`);
 
           // 初回ページで総数を記録
           if (page === 1) {
@@ -126,8 +166,8 @@ async function searchInOrganization(
                 // テキストマッチ情報がない場合は簡単なマッチ情報のみ作成
                 matches.push({
                   lineNumber: 1,
-                  line: `マッチが見つかりました: "${query}"`,
-                  context: [`ファイル: ${item.name}`],
+                  line: `Match found: "${query}"`,
+                  context: [`File: ${item.name}`],
                 });
               }
 
@@ -144,7 +184,7 @@ async function searchInOrganization(
             } catch (itemError) {
               const repoName = item.repository?.name || "unknown";
               console.warn(
-                `アイテム処理エラー ${repoName}/${item.path}:`,
+                `Item processing error ${repoName}/${item.path}:`,
                 itemError
               );
               errors.push({
@@ -164,9 +204,9 @@ async function searchInOrganization(
           // GitHub Search APIは最大1000件（10ページ）までの制限があるため、
           // それを超える場合は警告を表示
           if (page > 10) {
-            console.warn(`⚠️  検索結果が1000件を超えています (${extension})`);
+            console.warn(`⚠️  Search results exceed 1000 items (${extension})`);
             console.warn(
-              `    GitHub Search APIの制限により、一部結果が取得できません`
+              `    Due to GitHub Search API limitations, some results may not be retrieved`
             );
             hitLimit = true;
             hasNextPage = false;
@@ -178,7 +218,7 @@ async function searchInOrganization(
           }
         } catch (searchError) {
           console.warn(
-            `検索エラー (${extension}, ページ ${page}):`,
+            `Search error (${extension}, page ${page}):`,
             searchError
           );
           errors.push({
@@ -201,8 +241,8 @@ async function searchInOrganization(
       });
 
       console.log(
-        `  📊 ${extension}: ${retrieved}/${totalFound} 件取得 ${
-          hitLimit ? "(制限あり)" : ""
+        `  📊 ${extension}: ${retrieved}/${totalFound} items retrieved ${
+          hitLimit ? "(limited)" : ""
         }`
       );
 
@@ -210,7 +250,7 @@ async function searchInOrganization(
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   } catch (error) {
-    console.error("組織検索エラー:", error);
+    console.error("Organization search error:", error);
     errors.push({
       repository: "organization-search",
       error: error instanceof Error ? error.message : String(error),
@@ -266,54 +306,62 @@ function convertToCSV(summary: SearchSummary): string {
   return [headers.join(","), ...rows].join("\n");
 }
 
-async function main() {
-  const args = parse(Deno.args, {
-    string: ["org", "query", "extensions", "output", "format"],
-    default: {
-      output: ".output",
-      format: "json",
-      extensions: "ts,js,tsx,jsx",
-    },
-  });
-
-  if (!args.org) {
-    console.error("エラー: --org オプションは必須です");
-    Deno.exit(1);
-  }
-
-  if (!args.query) {
-    console.error("エラー: --query オプションは必須です");
-    Deno.exit(1);
-  }
-
-  if (!["json", "csv"].includes(args.format)) {
-    console.error(
-      "エラー: --format オプションはjsonまたはcsvを指定してください"
-    );
-    Deno.exit(1);
-  }
-
-  const extensions = args.extensions
-    .split(",")
-    .map((ext) => (ext.trim().startsWith(".") ? ext.trim() : `.${ext.trim()}`));
-
-  console.log(`🔍 検索開始...`);
-  console.log(`- 組織: ${args.org}`);
-  console.log(`- 検索クエリ: "${args.query}"`);
-  console.log(`- 対象拡張子: ${extensions.join(", ")}`);
-
-  const octokit = new Octokit({
-    auth: Deno.env.get("GH_TOKEN"),
-  });
-
+// メインのファイル検索ロジック
+async function searchFilesInOrg(
+  options: SearchFilesInOrgOptions
+): Promise<SearchFilesInOrgResult> {
   try {
+    const {
+      org,
+      query,
+      extensions = ["ts", "js", "tsx", "jsx"],
+      output = ".output",
+      format = "json",
+    } = options;
+
+    // バリデーション
+    if (!org) {
+      return { success: false, error: "Organization name is required" };
+    }
+
+    if (!query) {
+      return { success: false, error: "Search query is required" };
+    }
+
+    if (!["json", "csv"].includes(format)) {
+      return { success: false, error: "Format must be json or csv" };
+    }
+
+    // .envファイルの読み込み
+    const env = await load();
+    const token = env.GH_TOKEN;
+
+    if (!token) {
+      return {
+        success: false,
+        error: "GH_TOKEN environment variable is not set",
+      };
+    }
+
+    const octokit = createOctokit(token);
+
+    // 拡張子の正規化
+    const normalizedExtensions = extensions.map((ext) =>
+      ext.trim().startsWith(".") ? ext.trim() : `.${ext.trim()}`
+    );
+
+    console.log(`🔍 Starting search...`);
+    console.log(`- Organization: ${org}`);
+    console.log(`- Search query: "${query}"`);
+    console.log(`- Target extensions: ${normalizedExtensions.join(", ")}`);
+
     // 組織全体で一括検索を実行
-    console.log("🔍 組織全体で検索を実行中...");
+    console.log("🔍 Executing search across organization...");
     const {
       results: allResults,
       errors,
       searchStats,
-    } = await searchInOrganization(octokit, args.org, args.query, extensions);
+    } = await searchInOrganization(octokit, org, query, normalizedExtensions);
 
     // 結果をリポジトリ毎にまとめる
     const repositoryGroups = new Map<string, SearchResult[]>();
@@ -324,13 +372,13 @@ async function main() {
       repositoryGroups.get(result.repository)!.push(result);
     });
 
-    console.log(`\n✅ 検索完了`);
-    console.log(`- 総マッチ数: ${allResults.length}`);
-    console.log(`- マッチしたリポジトリ数: ${repositoryGroups.size}`);
+    console.log(`\n✅ Search completed`);
+    console.log(`- Total matches: ${allResults.length}`);
+    console.log(`- Repositories with matches: ${repositoryGroups.size}`);
 
     // リポジトリ毎の詳細表示
     if (repositoryGroups.size > 0) {
-      console.log(`\n📋 リポジトリ毎のマッチ詳細:`);
+      console.log(`\n📋 Repository match details:`);
 
       // リポジトリをマッチ数でソート（降順）
       const sortedRepositories = Array.from(repositoryGroups.entries())
@@ -345,7 +393,7 @@ async function main() {
       sortedRepositories.forEach(
         ({ repository, fileCount, matchCount, results }) => {
           console.log(
-            `  📁 ${repository}: ${matchCount} マッチ (${fileCount} ファイル)`
+            `  📁 ${repository}: ${matchCount} matches (${fileCount} files)`
           );
 
           // ファイル数が多い場合は上位5つのファイルのみ表示
@@ -356,12 +404,12 @@ async function main() {
 
             topFiles.forEach((result) => {
               console.log(
-                `    📄 ${result.path}: ${result.matches.length} マッチ`
+                `    📄 ${result.path}: ${result.matches.length} matches`
               );
             });
 
             if (fileCount > 5) {
-              console.log(`    ... 他${fileCount - 5}ファイル`);
+              console.log(`    ... and ${fileCount - 5} more files`);
             }
           } else {
             // ファイル数が少ない場合は全て表示
@@ -369,7 +417,7 @@ async function main() {
               .sort((a, b) => b.matches.length - a.matches.length)
               .forEach((result) => {
                 console.log(
-                  `    📄 ${result.path}: ${result.matches.length} マッチ`
+                  `    📄 ${result.path}: ${result.matches.length} matches`
                 );
               });
           }
@@ -385,9 +433,9 @@ async function main() {
     );
 
     const summary: SearchSummary = {
-      organization: args.org,
-      query: args.query,
-      extensions,
+      organization: org,
+      query: query,
+      extensions: normalizedExtensions,
       timestamp: new Date().toISOString(),
       summary: {
         totalRepositories: repositoryGroups.size || 0,
@@ -400,64 +448,241 @@ async function main() {
     };
 
     // 出力
-    const outputDir = args.output;
-    await Deno.mkdir(outputDir, { recursive: true });
+    await ensureDir(output);
+    const outputPath = join(output, `${org}-search-results.${format}`);
 
-    const extension = args.format;
-    const outputPath = `${outputDir}/${args.org}-search-results.${extension}`;
-
-    if (args.format === "csv") {
+    if (format === "csv") {
       const csvContent = convertToCSV(summary);
       await Deno.writeTextFile(outputPath, csvContent);
     } else {
       await Deno.writeTextFile(outputPath, JSON.stringify(summary, null, 2));
     }
 
+    const resultSummary = {
+      organization: org,
+      query: query,
+      extensions: normalizedExtensions,
+      timestamp: new Date().toISOString(),
+      totalRepositories: repositoryGroups.size,
+      repositoriesWithMatches,
+      totalMatches,
+      totalFiles: allResults.length,
+      errorCount: errors.length,
+      searchStats,
+    };
+
+    return { success: true, summary: resultSummary, outputPath };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// CLI用のメイン処理
+async function main() {
+  const args = parseArgs(Deno.args, {
+    string: ["org", "query", "extensions", "output", "format"],
+    default: {
+      output: ".output",
+      format: "json",
+      extensions: "ts,js,tsx,jsx",
+    },
+  });
+
+  if (!args.org) {
+    console.error("Error: --org option is required");
+    Deno.exit(1);
+  }
+
+  if (!args.query) {
+    console.error("Error: --query option is required");
+    Deno.exit(1);
+  }
+
+  if (!["json", "csv"].includes(args.format)) {
+    console.error("Error: --format option must be json or csv");
+    Deno.exit(1);
+  }
+
+  const extensions = args.extensions
+    .split(",")
+    .map((ext) => (ext.trim().startsWith(".") ? ext.trim() : `.${ext.trim()}`));
+
+  const result = await searchFilesInOrg({
+    org: args.org,
+    query: args.query,
+    extensions,
+    output: args.output,
+    format: args.format as "json" | "csv",
+  });
+
+  if (!result.success) {
+    console.error(`Error: ${result.error}`);
+    Deno.exit(1);
+  }
+
+  if (result.summary && result.outputPath) {
     // サマリーを表示
-    console.log(`\n📊 検索結果サマリー:`);
-    console.log(`- 組織: ${args.org}`);
-    console.log(`- 検索クエリ: "${args.query}"`);
-    console.log(`- 対象拡張子: ${extensions.join(", ")}`);
-    console.log(`- 検索したリポジトリ数: ${repositoryGroups.size}`);
-    console.log(`- マッチしたリポジトリ数: ${repositoriesWithMatches}`);
-    console.log(`- マッチしたファイル数: ${allResults.length}`);
-    console.log(`- 総マッチ数: ${totalMatches}`);
-    console.log(`- エラー数: ${errors.length}`);
-    console.log(`- 出力形式: ${args.format}`);
-    console.log(`- 出力ファイル: ${outputPath}`);
+    console.log(`\n📊 Search result summary:`);
+    console.log(`- Organization: ${result.summary.organization}`);
+    console.log(`- Search query: "${result.summary.query}"`);
+    console.log(`- Target extensions: ${result.summary.extensions.join(", ")}`);
+    console.log(`- Repositories searched: ${result.summary.totalRepositories}`);
+    console.log(
+      `- Repositories with matches: ${result.summary.repositoriesWithMatches}`
+    );
+    console.log(`- Files with matches: ${result.summary.totalFiles}`);
+    console.log(`- Total matches: ${result.summary.totalMatches}`);
+    console.log(`- Errors: ${result.summary.errorCount}`);
+    console.log(`- Output format: ${args.format}`);
+    console.log(`- Output file: ${result.outputPath}`);
 
     // 検索統計の詳細表示
-    if (searchStats.length > 0) {
-      console.log(`\n📈 検索統計:`);
-      searchStats.forEach((stat) => {
-        const status = stat.hitLimit ? "⚠️ 制限あり" : "✅ 完全";
+    if (result.summary.searchStats.length > 0) {
+      console.log(`\n📈 Search statistics:`);
+      result.summary.searchStats.forEach((stat) => {
+        const status = stat.hitLimit ? "⚠️ Limited" : "✅ Complete";
         console.log(
-          `  .${stat.extension}: ${stat.retrieved}/${stat.totalFound} 件 ${status}`
+          `  .${stat.extension}: ${stat.retrieved}/${stat.totalFound} items ${status}`
         );
       });
 
-      const hasLimits = searchStats.some((stat) => stat.hitLimit);
+      const hasLimits = result.summary.searchStats.some(
+        (stat) => stat.hitLimit
+      );
       if (hasLimits) {
         console.log(
-          `\n⚠️  注意: 一部の拡張子でGitHub Search APIの1000件制限に達しました`
+          `\n⚠️  Note: Some extensions hit the GitHub Search API 1000 item limit`
         );
         console.log(
-          `   より多くの結果を取得するには、検索クエリをより具体的にしてください`
+          `   To get more results, make your search query more specific`
         );
       }
     }
-
-    if (errors.length > 0) {
-      console.log(`\n⚠️  エラーが発生したリポジトリ:`);
-      errors.forEach((error) => {
-        console.log(`  - ${error.repository}: ${error.error}`);
-      });
-    }
-  } catch (error) {
-    console.error("エラーが発生しました:", error);
-    Deno.exit(1);
   }
 }
+
+// TUI用の実行関数
+export async function executeSearchFilesInOrg(): Promise<void> {
+  const { Input, Select } = await import(
+    "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/mod.ts"
+  );
+
+  try {
+    // 組織名の入力
+    const org = await Input.prompt({
+      message: "Enter organization name:",
+      validate: (value: string) =>
+        value.trim().length > 0 ? true : "Organization name is required",
+    });
+
+    // 検索クエリの入力
+    const query = await Input.prompt({
+      message: "Enter search query:",
+      validate: (value: string) =>
+        value.trim().length > 0 ? true : "Search query is required",
+    });
+
+    // 拡張子の入力
+    const extensionsInput = await Input.prompt({
+      message: "Enter file extensions (comma-separated, e.g., ts,js,tsx,jsx):",
+      default: "ts,js,tsx,jsx",
+      validate: (value: string) =>
+        value.trim().length > 0 ? true : "File extensions are required",
+    });
+
+    // 出力形式の選択
+    const format = await Select.prompt({
+      message: "Select output format:",
+      options: [
+        { name: "JSON", value: "json" },
+        { name: "CSV", value: "csv" },
+      ],
+      default: "json",
+    });
+
+    // 拡張子の正規化
+    const extensions = extensionsInput
+      .split(",")
+      .map((ext) =>
+        ext.trim().startsWith(".") ? ext.trim() : `.${ext.trim()}`
+      );
+
+    // 設定内容の確認
+    console.log("\n📋 Settings:");
+    console.log(`Organization: ${org}`);
+    console.log(`Search Query: "${query}"`);
+    console.log(`File Extensions: ${extensions.join(", ")}`);
+    console.log(`Output Format: ${format}`);
+
+    const options: SearchFilesInOrgOptions = {
+      org,
+      query,
+      extensions,
+      format: format as "json" | "csv",
+    };
+
+    const result = await searchFilesInOrg(options);
+
+    if (result.success && result.summary && result.outputPath) {
+      console.log(
+        `\n📝 Search results have been output to ${result.outputPath}`
+      );
+
+      console.log(`\n📊 Summary:`);
+      console.log(`- Organization: ${result.summary.organization}`);
+      console.log(`- Search query: "${result.summary.query}"`);
+      console.log(
+        `- Target extensions: ${result.summary.extensions.join(", ")}`
+      );
+      console.log(
+        `- Repositories searched: ${result.summary.totalRepositories}`
+      );
+      console.log(
+        `- Repositories with matches: ${result.summary.repositoriesWithMatches}`
+      );
+      console.log(`- Files with matches: ${result.summary.totalFiles}`);
+      console.log(`- Total matches: ${result.summary.totalMatches}`);
+      console.log(`- Errors: ${result.summary.errorCount}`);
+      console.log(`- Output format: ${format}`);
+      console.log(`- Output file: ${result.outputPath}`);
+
+      // 検索統計の詳細表示
+      if (result.summary.searchStats.length > 0) {
+        console.log(`\n📈 Search statistics:`);
+        result.summary.searchStats.forEach((stat) => {
+          const status = stat.hitLimit ? "⚠️ Limited" : "✅ Complete";
+          console.log(
+            `  .${stat.extension}: ${stat.retrieved}/${stat.totalFound} items ${status}`
+          );
+        });
+
+        const hasLimits = result.summary.searchStats.some(
+          (stat) => stat.hitLimit
+        );
+        if (hasLimits) {
+          console.log(
+            `\n⚠️  Note: Some extensions hit the GitHub Search API 1000 item limit`
+          );
+          console.log(
+            `   To get more results, make your search query more specific`
+          );
+        }
+      }
+    } else {
+      console.log(`Error: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+}
+
+// Export functions for TUI
+export {
+  searchFilesInOrg,
+  type SearchFilesInOrgOptions,
+  type SearchFilesInOrgResult,
+};
 
 if (import.meta.main) {
   main();

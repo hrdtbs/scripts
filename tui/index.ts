@@ -8,6 +8,7 @@ import { executeListOpenPRs } from "../src/list-open-prs/index.ts";
 import { executeListRenovateStatus } from "../src/list-renovate-status/index.ts";
 import { executeListReposInOrg } from "../src/list-repos-in-org/index.ts";
 import { executeSearchActionsInOrg } from "../src/search-actions-in-org/index.ts";
+import { executeSearchFilesInOrg } from "../src/search-files-in-org/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -45,6 +46,11 @@ const menuOptions = [
     name: "Search Actions in Organization",
     value: "search-actions-in-org",
     execute: executeSearchActionsInOrg,
+  },
+  {
+    name: "Search Files in Organization",
+    value: "search-files-in-org",
+    execute: executeSearchFilesInOrg,
   },
   {
     name: "Exit",

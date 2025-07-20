@@ -696,6 +696,7 @@ deno task start tui/index.ts
 - **List Renovate Status**: Renovateの設定状況と依存関係管理状況の確認
 - **List Repositories in Organization**: 組織内のリポジトリ一覧取得
 - **Search Actions in Organization**: 組織内でのGitHub Actions使用状況の検索・分析
+- **Search Files in Organization**: 組織内のファイル内容検索・分析
 
 ### 特徴
 
