@@ -9,6 +9,7 @@ import { executeListRenovateStatus } from "../src/list-renovate-status/index.ts"
 import { executeListReposInOrg } from "../src/list-repos-in-org/index.ts";
 import { executeSearchActionsInOrg } from "../src/search-actions-in-org/index.ts";
 import { executeSearchFilesInOrg } from "../src/search-files-in-org/index.ts";
+import { executeFindReposWithFile } from "../src/find-repos-with-file/index.ts";
 import { ensureEnvToken } from "../utils/env.ts";
 
 const menuOptions = [
@@ -51,6 +52,11 @@ const menuOptions = [
     name: "Search Files in Organization",
     value: "search-files-in-org",
     execute: executeSearchFilesInOrg,
+  },
+  {
+    name: "Find Repositories with File",
+    value: "find-repos-with-file",
+    execute: executeFindReposWithFile,
   },
   {
     name: "Exit",
