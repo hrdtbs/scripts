@@ -28,7 +28,6 @@ export const getDependabotAlerts = async (
             repo,
             state,
             per_page: 100,
-            page,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
@@ -40,7 +39,9 @@ export const getDependabotAlerts = async (
         if (response.data.length < 100) {
           break;
         }
-        page++;
+        console.error("page", page);
+        break;
+        //page++;
       } catch (error) {
         if (error.status === 404) {
           console.warn(`⚠️ ${owner}/${repo}: Dependabotアラートが無効です`);
