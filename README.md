@@ -36,6 +36,7 @@ deno task start tui/index.ts
 - List Repositories: 組織内のリポジトリ一覧取得
 - Search Actions: 組織内でのGitHub Actions使用状況の検索・分析
 - Search Files: 組織内のファイル内容検索・分析
+- Find Repositories with File: 特定のファイルパスを含むリポジトリの検索
 
 ## 必要な権限
 
@@ -69,4 +70,3 @@ deno task update-deps
 ## ライセンス
 
 MIT License
-
