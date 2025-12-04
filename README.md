@@ -20,7 +20,7 @@ cp .env.example .env
 ### 2. TUIの起動
 
 ```bash
-deno task start tui/index.ts
+deno run start
 ```
 
 ## 利用可能な機能
