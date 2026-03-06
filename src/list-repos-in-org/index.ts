@@ -4,7 +4,7 @@ import { Octokit } from "npm:@octokit/rest@19.0.4";
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 
 interface Repository {
   name: string;
@@ -48,7 +48,7 @@ interface ListReposInOrgResult {
 }
 
 // Octokitの初期化
-function createOctokit(token?: string): Octokit {
+function createOctokit(token: string): Octokit {
   return new Octokit({
     auth: token,
   });
@@ -66,18 +66,8 @@ async function listReposInOrg(
       return { success: false, error: "Organization name is required" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
+    const token = await getGitHubToken();
     const octokit = createOctokit(token);
-
-    if (!token) {
-      console.warn(
-        "GH_TOKEN environment variable is not set. Private repositories may not be accessible.",
-        "To access private repositories, please set GH_TOKEN in your .env file."
-      );
-    }
 
     // リポジトリの取得
     console.log("📚 Fetching repositories...");

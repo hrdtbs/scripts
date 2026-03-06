@@ -2,7 +2,7 @@ import { Octokit } from "npm:@octokit/rest@19.0.4";
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 import { getReposForOrg } from "./get-repos-in-org.ts";
 import { getDependabotAlerts } from "./get-dependabot-alerts.ts";
 
@@ -112,17 +112,7 @@ async function listDependabotAlerts(
       return { success: false, error: "Format must be json or csv" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "GH_TOKEN environment variable is not set",
-      };
-    }
-
+    const token = await getGitHubToken();
     const octokit = createOctokit(token);
 
     // リポジトリの取得
@@ -397,7 +387,9 @@ async function main() {
     console.error(
       "使用方法: deno task start src/list-dependabot-alerts/index.ts --org=組織名 [--output=出力ディレクトリ] [--state=アラートの状態] [--format=出力形式] [--repos=REPO1,REPO2,...]"
     );
-    console.error("\n注意: .envファイルにGH_TOKENを設定してください");
+    console.error(
+      "\n認証: gh auth login で認証してください"
+    );
     console.error(
       "\n--reposオプションを指定しない場合は、全リポジトリが対象になります"
     );

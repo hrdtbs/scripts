@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-net --allow-env
+#!/usr/bin/env -S deno run --allow-read --allow-net --allow-run=gh
 
 import { Select } from "https://deno.land/x/cliffy@v1.0.0-rc.3/prompt/select.ts";
 import { executeCreateIssuesBulk } from "../src/bulk-create-issues/index.ts";
@@ -10,7 +10,7 @@ import { executeListReposInOrg } from "../src/list-repos-in-org/index.ts";
 import { executeSearchActionsInOrg } from "../src/search-actions-in-org/index.ts";
 import { executeSearchFilesInOrg } from "../src/search-files-in-org/index.ts";
 import { executeFindReposWithFile } from "../src/find-repos-with-file/index.ts";
-import { ensureEnvToken } from "../utils/env.ts";
+import { getGitHubToken } from "../utils/github-token.ts";
 
 const menuOptions = [
   {
@@ -68,7 +68,7 @@ const menuOptions = [
 ];
 
 async function main(): Promise<void> {
-  await ensureEnvToken();
+  await getGitHubToken();
 
   const choice = await Select.prompt<string>({
     message: "Please select:",

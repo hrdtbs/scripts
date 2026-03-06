@@ -1,6 +1,6 @@
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { Octokit } from "npm:@octokit/rest@20.0.2";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
 
@@ -251,17 +251,7 @@ async function findReposWithFile(
       return { success: false, error: "Format must be json or csv" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "GH_TOKEN environment variable is not set",
-      };
-    }
-
+    const token = await getGitHubToken();
     const octokit = createOctokit(token);
 
     console.log(`🔍 Starting search...`);

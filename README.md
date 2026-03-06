@@ -12,9 +12,8 @@ cd scripts
 # 依存関係をインストール
 deno task install
 
-# 環境変数を設定
-cp .env.example .env
-# .envファイルを編集してGitHubトークンを設定
+# GitHub CLIで認証
+gh auth login
 ```
 
 ### 2. TUIの起動

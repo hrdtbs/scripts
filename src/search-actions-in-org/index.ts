@@ -1,10 +1,10 @@
-#!/usr/bin/env -S deno run --allow-net --allow-env --allow-write
+#!/usr/bin/env -S deno run --allow-net --allow-read --allow-run=gh
 
 import { parse as parseYaml } from "https://deno.land/std@0.217.0/yaml/mod.ts";
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 
 /**
  * 指定された組織内のリポジトリをスキャンして、特定のGitHub Actionが
@@ -380,16 +380,7 @@ async function searchActionsInOrg(
       return { success: false, error: "Action name is required" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "GH_TOKEN environment variable is not set",
-      };
-    }
+    const token = await getGitHubToken();
 
     console.log(
       `📚 Scanning organization "${org}" for action "${action}" usage...`

@@ -2,7 +2,7 @@ import { Octokit } from "npm:@octokit/rest@19.0.4";
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 import { getReposForOrg } from "./get-repos-in-org.ts";
 import {
   getRenovateStatus,
@@ -65,17 +65,7 @@ async function listRenovateStatus(
       return { success: false, error: "Organization name is required" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "GH_TOKEN environment variable is not set",
-      };
-    }
-
+    const token = await getGitHubToken();
     const octokit = createOctokit(token);
 
     // リポジトリの取得

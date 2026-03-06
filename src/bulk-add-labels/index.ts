@@ -1,6 +1,6 @@
 import { parseArgs } from "https://deno.land/std@0.220.1/cli/parse_args.ts";
 import { Octokit } from "npm:@octokit/rest@20.0.2";
-import { load } from "https://deno.land/std@0.220.1/dotenv/mod.ts";
+import { getGitHubToken } from "../../utils/github-token.ts";
 
 // 型定義
 interface Repository {
@@ -137,17 +137,7 @@ async function bulkAddLabels(
       return { success: false, error: "Labels are required" };
     }
 
-    // .envファイルの読み込み
-    const env = await load();
-    const token = env.GH_TOKEN;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "GH_TOKEN environment variable is not set",
-      };
-    }
-
+    const token = await getGitHubToken();
     const octokit = createOctokit(token);
 
     let targetRepositories: Repository[] = [];
@@ -231,7 +221,9 @@ async function main() {
     console.error(
       "使用方法: deno task start src/bulk-add-labels/index.ts --org=ORGANIZATION --labels=LABEL1,LABEL2,... [--colors=COLOR1,COLOR2,...] [--repos=REPO1,REPO2,...]"
     );
-    console.error("\n注意: .envファイルにGH_TOKENを設定してください");
+    console.error(
+      "\n認証: gh auth login で認証してください"
+    );
     console.error(
       "\n--reposオプションを指定しない場合は、全リポジトリが対象になります"
     );

@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start": "deno run --allow-env --allow-net --allow-write --allow-read tui/index.ts"
+    "start": "deno run --allow-net --allow-read --allow-run=gh tui/index.ts"
   },
   "compilerOptions": {
     "strict": true,
