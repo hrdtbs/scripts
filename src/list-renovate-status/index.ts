@@ -4,10 +4,7 @@ import { join } from "https://deno.land/std@0.220.1/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.220.1/fs/ensure_dir.ts";
 import { getGitHubToken } from "../../utils/github-token.ts";
 import { getReposForOrg } from "./get-repos-in-org.ts";
-import {
-  getRenovateStatus,
-  type RenovateStatus,
-} from "./get-renovate-status.ts";
+import { getRenovateStatus } from "./get-renovate-status.ts";
 
 interface Repository {
   name: string;
@@ -71,7 +68,7 @@ async function listRenovateStatus(
     // リポジトリの取得
     console.log("📚 Fetching repositories...");
     const repos = (await getReposForOrg(octokit, org)).filter(
-      (repo: Repository) => !repo.archived
+      (repo) => !repo.archived
     );
 
     console.log(
@@ -80,7 +77,7 @@ async function listRenovateStatus(
 
     // Renovateステータスの取得
     const results = await Promise.all(
-      repos.map(async (repo: Repository) => {
+      repos.map(async (repo) => {
         const status = await getRenovateStatus(octokit, org, repo.name);
         return {
           repository: repo.name,

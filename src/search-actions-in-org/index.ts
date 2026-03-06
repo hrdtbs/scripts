@@ -69,6 +69,7 @@ interface SearchActionsInOrgResult {
 /**
  * GitHub APIを使用してリクエストを行う
  */
+// deno-lint-ignore no-explicit-any
 async function githubRequest(url: string, token: string): Promise<any> {
   const response = await fetch(url, {
     headers: {
@@ -130,6 +131,7 @@ async function checkActionInUses(
           // ファイルの内容を取得
           const response = await fetch(fileInfo.download_url);
           const content = await response.text();
+          // deno-lint-ignore no-explicit-any
           const actionDef = parseYaml(content) as any;
 
           // composite actionの場合、使用しているアクションをチェック
@@ -184,6 +186,7 @@ async function scanWorkflowFile(
     );
 
     // YAMLとして解析
+    // deno-lint-ignore no-explicit-any
     const workflow = parseYaml(content) as any;
 
     // 直接または間接的な使用を追跡
@@ -192,7 +195,8 @@ async function scanWorkflowFile(
 
     // ジョブとステップを確認
     if (workflow && workflow.jobs) {
-      for (const [jobId, job] of Object.entries(workflow.jobs)) {
+      for (const [_jobId, job] of Object.entries(workflow.jobs)) {
+        // deno-lint-ignore no-explicit-any
         const jobData = job as any;
 
         // ジョブ自体がアクションを使用している場合
@@ -399,12 +403,6 @@ async function searchActionsInOrg(
     const outputPath = join(output, `${org}-action-usage.json`);
 
     // 結果の集計
-    const directUsageCount = results.directUsages.length;
-    const indirectUsageCount = Object.values(results.indirectUsages).reduce(
-      (sum, usages) => sum + usages.length,
-      0
-    );
-
     const reposWithDirectUsage = new Set(
       results.directUsages.map((usage) => usage.repo)
     ).size;

@@ -8,8 +8,8 @@ interface RepositoryWithFile {
   repository: string;
   filePath: string;
   url: string;
-  size: number;
-  lastModified: string;
+  size: number | undefined;
+  lastModified: string | null | undefined;
   isArchived: boolean;
 }
 
@@ -135,7 +135,7 @@ async function findRepositoriesWithFile(
               repository: repoName,
               filePath: item.path,
               url: item.html_url,
-              size: item.size,
+              size: (item as typeof item & { size?: number }).size,
               lastModified: item.repository.updated_at,
               isArchived: item.repository.archived || false,
             };
@@ -215,7 +215,7 @@ function convertToCSV(summary: FindReposWithFileSummary): string {
         result.repository,
         result.filePath,
         result.url,
-        result.size.toString(),
+        String(result.size ?? ""),
         result.lastModified,
         result.isArchived.toString(),
       ].join(",")

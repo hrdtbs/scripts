@@ -2,7 +2,8 @@ import { Octokit } from "npm:@octokit/rest@19.0.4";
 
 type AlertResult = {
   status: "success" | "error";
-  alerts: any[];
+  // deno-lint-ignore no-explicit-any
+  alerts: Record<string, any>[];
   error?: {
     type: "disabled" | "no_access" | "other";
     message: string;
@@ -17,7 +18,7 @@ export const getDependabotAlerts = async (
 ): Promise<AlertResult> => {
   try {
     const alerts = [];
-    let page = 1;
+    const page = 1;
 
     while (true) {
       try {
@@ -42,7 +43,8 @@ export const getDependabotAlerts = async (
         console.error("page", page);
         break;
         //page++;
-      } catch (error) {
+      } catch (err: unknown) {
+        const error = err as { status?: number; message?: string };
         if (error.status === 404) {
           console.warn(`⚠️ ${owner}/${repo}: Dependabotアラートが無効です`);
           return {
@@ -83,7 +85,7 @@ export const getDependabotAlerts = async (
             alerts: [],
             error: {
               type: "other",
-              message: error.message,
+              message: error.message || "不明なエラー",
             },
           };
         }
@@ -102,14 +104,14 @@ export const getDependabotAlerts = async (
       status: "success",
       alerts,
     };
-  } catch (error) {
-    console.error(`❌ ${owner}/${repo}: 予期せぬエラーが発生しました:`, error);
+  } catch (err: unknown) {
+    console.error(`❌ ${owner}/${repo}: 予期せぬエラーが発生しました:`, err);
     return {
       status: "error",
       alerts: [],
       error: {
         type: "other",
-        message: error.message || "予期せぬエラーが発生しました",
+        message: err instanceof Error ? err.message : "予期せぬエラーが発生しました",
       },
     };
   }

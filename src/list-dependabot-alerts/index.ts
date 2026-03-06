@@ -19,12 +19,13 @@ interface DependabotAlert {
   repository: string;
   number: number;
   alert_id: number;
-  dependency: any;
+  // deno-lint-ignore no-explicit-any
+  dependency: Record<string, any>;
   severity: string;
   summary: string;
   description: string;
   vulnerableVersionRange: string;
-  firstPatchedVersion: any;
+  firstPatchedVersion: { identifier: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -286,7 +287,7 @@ async function listDependabotAlerts(
         csvHeaders
           .split(",")
           .map((header) => {
-            let value: any;
+            let value: string | number | undefined;
             switch (header) {
               case "package_ecosystem":
                 value = alert.dependency.package.ecosystem;
@@ -316,7 +317,7 @@ async function listDependabotAlerts(
                 value = alert.updatedAt;
                 break;
               default:
-                value = alert[header as keyof DependabotAlert];
+                value = alert[header as keyof DependabotAlert] as string | number | undefined;
             }
             if (
               typeof value === "string" &&

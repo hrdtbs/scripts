@@ -84,14 +84,14 @@ async function listReposInOrg(
     await ensureDir(output);
     const outputPath = join(output, `${org}-repos.json`);
 
-    const repositories = filteredRepos.map((repo: Repository) => ({
+    const repositories = filteredRepos.map((repo) => ({
       name: repo.name,
       fullName: repo.full_name,
       url: repo.html_url,
       description: repo.description || "",
       isPrivate: repo.private,
-      createdAt: repo.created_at,
-      updatedAt: repo.updated_at,
+      createdAt: repo.created_at ?? "",
+      updatedAt: repo.updated_at ?? "",
       language: repo.language || "",
     }));
 
