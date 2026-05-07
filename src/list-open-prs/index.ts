@@ -63,21 +63,30 @@ async function listOpenPRs(
     const prs: PullRequest[] = [];
 
     try {
-      const { data } = await octokit.rest.search.issuesAndPullRequests({
-        q: query,
-        per_page: 100,
-      });
+      let page = 1;
+      let hasNextPage = true;
 
-      for (const item of data.items) {
-        prs.push({
-          repository: item.repository_url.split("/").slice(-1)[0],
-          number: item.number,
-          title: item.title,
-          url: item.html_url,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
-          author: item.user?.login || "unknown",
+      while (hasNextPage) {
+        const { data } = await octokit.rest.search.issuesAndPullRequests({
+          q: query,
+          per_page: 100,
+          page,
         });
+
+        for (const item of data.items) {
+          prs.push({
+            repository: item.repository_url.split("/").slice(-1)[0],
+            number: item.number,
+            title: item.title,
+            url: item.html_url,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at,
+            author: item.user?.login || "unknown",
+          });
+        }
+
+        hasNextPage = data.items.length === 100 && page < 10;
+        page++;
       }
     } catch (error) {
       const errorMessage =
